@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<surface-contract version="0" status="experimental">
+  <purpose>
+    Surface Contract 0 describes native Android UI as typed semantic nodes. XML
+    declares structure and initial state. PowerShell assigns behavior after parsing.
+  </purpose>
+  <invariants>
+    <invariant>Surface XML contains no executable expressions, bindings, reflection targets, or raw Android types.</invariant>
+    <invariant>Every document has one immutable hardpoint origin and resource resolver.</invariant>
+    <invariant>Resources resolve to streams inside that origin, never Android compiled resource identifiers.</invariant>
+    <invariant>Android callbacks update shadow state and enqueue semantic events without running PowerShell.</invariant>
+    <invariant>PowerShell event handlers run serially through the owning runspace.</invariant>
+    <invariant>PowerShell mutations are projected asynchronously onto the Android UI thread.</invariant>
+  </invariants>
+  <grammar>
+    <element name="surface" children="stack text input button image list separator">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="title" type="string" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="stack" children="stack text input button image list separator">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="direction" type="vertical|horizontal" default="vertical" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="text" content="text">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="text" type="string" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="input" content="empty">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="text" type="string" required="false" />
+      <attribute name="hint" type="string" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="button" content="text">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="text" type="string" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="image" content="empty">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="src" type="origin-relative-resource" required="true" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="list" content="empty">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+    <element name="separator" content="empty">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+    </element>
+  </grammar>
+  <state>
+    <property node="text button" name="Text" type="string" mutable="true" />
+    <property node="input" name="Text" type="string" mutable="true" />
+    <property node="input" name="Hint" type="string" mutable="true" />
+    <property node="list" name="Items" type="object[]" mutable="true" note="Display text is snapshotted on the PowerShell thread; original CLR objects are retained." />
+    <property node="list" name="SelectedItem" type="object" mutable="true" />
+    <property node="all" name="Visible" type="boolean" mutable="true" />
+    <property node="all" name="Enabled" type="boolean" mutable="true" />
+  </state>
+  <events queue-capacity="256" ordering="FIFO" overflow="drop-and-log">
+    <event node="input" property="Changed" name="Changed" payload="Value OldValue NewValue" />
+    <event node="button" property="Click" name="Click" payload="Source" />
+    <event node="list" property="SelectionChanged" name="SelectionChanged" payload="Item OldValue NewValue" />
+    <event node="list" property="Invoked" name="Invoked" payload="Item" />
+  </events>
+  <powershell>
+    <projection name="$UI">Each declared id is a typed note property, for example $UI.query and $UI.results.</projection>
+    <behavior>Handlers are ScriptBlock properties assigned from the hardpoint PS1 after the native document is shown.</behavior>
+    <example><![CDATA[
+$refresh = {
+    param($Event)
+    $UI.results.Items = @(Get-Command "*$($UI.query.Text)*")
+}
+$UI.query.Changed = $refresh
+$UI.search.Click = $refresh
+    ]]></example>
+  </powershell>
+  <resources>
+    <accepted example="../Assets/logo.png">Paths relative to the source document, contained by the hardpoint root.</accepted>
+    <accepted example="asset:logo.png">Logical shorthand for Assets/logo.png in the same hardpoint.</accepted>
+    <rejected example="@drawable/logo">Compiled Android resource identifiers belong below the renderer boundary.</rejected>
+    <rejected example="../../outside.png">Traversal outside the immutable origin is rejected.</rejected>
+  </resources>
+  <lifecycle>Activity replacement destroys only the Android View tree. The living typed document is re-rendered from shadow state when the replacement Activity attaches.</lifecycle>
+</surface-contract>
