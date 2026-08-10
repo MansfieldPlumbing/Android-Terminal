@@ -3,6 +3,7 @@ using Android.App;
 using System.Management.Automation;
 using NativePwshConsole.Surface;
 using NativePwshConsole.Hardpoints;
+using Terminal.Engine;
 
 namespace NativePwshConsole;
 
@@ -12,6 +13,7 @@ internal static class TerminalRuntime
 {
     private static readonly object Gate = new();
     private static PowerShellSession? _session;
+    private static TerminalEngine? _terminal;
     private static SurfaceHost? _surfaces;
     private static HardpointCatalog? _hardpoints;
 
@@ -24,8 +26,23 @@ internal static class TerminalRuntime
             string system = SeedSystemScripts(context, home);
             _hardpoints = HardpointCatalog.HydrateAndLoad(context, home);
             _session = new PowerShellSession(home, system);
+            _terminal = new TerminalEngine();
+            _session.Output += _terminal.Feed;
+            foreach (string diagnostic in _session.StartupDiagnostics)
+                _terminal.Feed($"\x1b[91m{diagnostic}\x1b[0m\r\n");
+            _terminal.Feed($"PowerShell {PowerShellSession.EngineVersion}\r\n");
+            _terminal.Feed(_session.GetPromptAsync().GetAwaiter().GetResult());
             _surfaces = new SurfaceHost(_session);
             return _session;
+        }
+    }
+
+    public static TerminalEngine GetTerminalEngine(Context context)
+    {
+        lock (Gate)
+        {
+            _ = GetOrCreate(context);
+            return _terminal ?? throw new InvalidOperationException("Terminal engine is unavailable.");
         }
     }
 
@@ -37,6 +54,7 @@ internal static class TerminalRuntime
             _surfaces = null;
             _session?.Dispose();
             _session = null;
+            _terminal = null;
             _hardpoints = null;
         }
     }

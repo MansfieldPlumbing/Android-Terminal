@@ -359,10 +359,10 @@ $global:UI = Show-TerminalHardpoint -Id $Id
             try
             {
                 ps.Invoke();
-                foreach (var error in ps.Streams.Error) Output?.Invoke($"\n\x1b[91mERROR: {error}\x1b[0m\n");
+                foreach (var error in ps.Streams.Error) Output?.Invoke($"\r\n\x1b[91mERROR: {error}\x1b[0m\r\n");
             }
-            catch (PipelineStoppedException) { Output?.Invoke("^C\n"); }
-            catch (Exception ex) { Output?.Invoke($"\n\x1b[91mERROR: {ex.Message}\x1b[0m\n"); }
+            catch (PipelineStoppedException) { Output?.Invoke("^C\r\n"); }
+            catch (Exception ex) { Output?.Invoke($"\r\n\x1b[91mERROR: {ex.Message}\x1b[0m\r\n"); }
             finally { _active = null; }
         }
     }
@@ -383,12 +383,12 @@ $global:UI = Show-TerminalHardpoint -Id $Id
             {
                 ps.Invoke();
                 foreach (ErrorRecord error in ps.Streams.Error)
-                    Output?.Invoke($"\n\x1b[91mSURFACE ERROR: {error}\x1b[0m\n");
+                    Output?.Invoke($"\r\n\x1b[91mSURFACE ERROR: {error}\x1b[0m\r\n");
             }
             catch (PipelineStoppedException) { }
             catch (Exception error)
             {
-                Output?.Invoke($"\n\x1b[91mSURFACE ERROR: {error.Message}\x1b[0m\n");
+                Output?.Invoke($"\r\n\x1b[91mSURFACE ERROR: {error.Message}\x1b[0m\r\n");
             }
             finally { _active = null; }
         }
@@ -434,14 +434,14 @@ internal sealed class NativeHostUi : PSHostUserInterface
     private readonly NativeRawUi _raw = new();
     public NativeHostUi(Action<string> write) => _write = write;
     public override PSHostRawUserInterface RawUI => _raw;
-    public override void Write(string value) => _write(value);
+    public override void Write(string value) => _write(NormalizeNewlines(value));
     public override void Write(ConsoleColor foregroundColor, ConsoleColor backgroundColor, string value)
-        => _write($"\x1b[{Ansi(foregroundColor)}m{value}\x1b[0m");
-    public override void WriteLine(string value) => _write(value + "\n");
-    public override void WriteErrorLine(string value) => _write("\x1b[91mERROR: " + value + "\x1b[0m\n");
-    public override void WriteDebugLine(string message) => _write("\x1b[90mDEBUG: " + message + "\x1b[0m\n");
-    public override void WriteVerboseLine(string message) => _write("\x1b[90mVERBOSE: " + message + "\x1b[0m\n");
-    public override void WriteWarningLine(string message) => _write("\x1b[93mWARNING: " + message + "\x1b[0m\n");
+        => _write($"\x1b[{AnsiForeground(foregroundColor)};{AnsiBackground(backgroundColor)}m{NormalizeNewlines(value)}\x1b[0m");
+    public override void WriteLine(string value) => _write(NormalizeNewlines(value) + "\r\n");
+    public override void WriteErrorLine(string value) => _write("\x1b[91mERROR: " + NormalizeNewlines(value) + "\x1b[0m\r\n");
+    public override void WriteDebugLine(string message) => _write("\x1b[90mDEBUG: " + NormalizeNewlines(message) + "\x1b[0m\r\n");
+    public override void WriteVerboseLine(string message) => _write("\x1b[90mVERBOSE: " + NormalizeNewlines(message) + "\x1b[0m\r\n");
+    public override void WriteWarningLine(string message) => _write("\x1b[93mWARNING: " + NormalizeNewlines(message) + "\x1b[0m\r\n");
     public override void WriteProgress(long sourceId, ProgressRecord record) { }
     public override string ReadLine() => string.Empty;
     public override SecureString ReadLineAsSecureString() => new();
@@ -450,7 +450,9 @@ internal sealed class NativeHostUi : PSHostUserInterface
     public override PSCredential PromptForCredential(string caption, string message, string userName, string targetName) => throw new NotSupportedException();
     public override PSCredential PromptForCredential(string caption, string message, string userName, string targetName, PSCredentialTypes allowedCredentialTypes, PSCredentialUIOptions options) => throw new NotSupportedException();
 
-    private static int Ansi(ConsoleColor c) => c switch
+    private static string NormalizeNewlines(string value) => value.Replace("\r\n", "\n").Replace("\n", "\r\n");
+
+    private static int AnsiForeground(ConsoleColor c) => c switch
     {
         ConsoleColor.Black => 30, ConsoleColor.DarkRed => 31, ConsoleColor.DarkGreen => 32,
         ConsoleColor.DarkYellow => 33, ConsoleColor.DarkBlue => 34, ConsoleColor.DarkMagenta => 35,
@@ -458,6 +460,16 @@ internal sealed class NativeHostUi : PSHostUserInterface
         ConsoleColor.Red => 91, ConsoleColor.Green => 92, ConsoleColor.Yellow => 93,
         ConsoleColor.Blue => 94, ConsoleColor.Magenta => 95, ConsoleColor.Cyan => 96,
         _ => 97
+    };
+
+    private static int AnsiBackground(ConsoleColor c) => c switch
+    {
+        ConsoleColor.Black => 40, ConsoleColor.DarkRed => 41, ConsoleColor.DarkGreen => 42,
+        ConsoleColor.DarkYellow => 43, ConsoleColor.DarkBlue => 44, ConsoleColor.DarkMagenta => 45,
+        ConsoleColor.DarkCyan => 46, ConsoleColor.Gray => 47, ConsoleColor.DarkGray => 100,
+        ConsoleColor.Red => 101, ConsoleColor.Green => 102, ConsoleColor.Yellow => 103,
+        ConsoleColor.Blue => 104, ConsoleColor.Magenta => 105, ConsoleColor.Cyan => 106,
+        _ => 107
     };
 }
 

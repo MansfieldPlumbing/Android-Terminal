@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="src/Terminal.Engine/Terminal.Engine.csproj" />
   <Project Path="src/Terminal.Android/Terminal.Android.csproj" />
+  <Project Path="tests/Terminal.Engine.Tests/Terminal.Engine.Tests.csproj" />
 </Solution>

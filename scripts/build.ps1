@@ -12,11 +12,14 @@ param(
 )
 
 $project = Join-Path $PSScriptRoot '..\src\Terminal.Android\Terminal.Android.csproj'
+$engineTests = Join-Path $PSScriptRoot '..\tests\Terminal.Engine.Tests\Terminal.Engine.Tests.csproj'
 $packagedSettings = Join-Path $PSScriptRoot '..\src\Terminal.Android\Assets\settings.ps1'
 $spareSettings = Join-Path $PSScriptRoot '..\templates\settings.default.ps1'
 if ((Get-FileHash $packagedSettings).Hash -ne (Get-FileHash $spareSettings).Hash) {
     throw 'templates/settings.default.ps1 has drifted from the packaged Assets/settings.ps1.'
 }
+& $DotNet run --project $engineTests -c $Configuration
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
 & $DotNet build $project -c $Configuration -r android-arm64 `
     -p:AndroidSdkDirectory=$AndroidSdk -p:JavaSdkDirectory=$JavaSdk
 if ($LASTEXITCODE) { exit $LASTEXITCODE }

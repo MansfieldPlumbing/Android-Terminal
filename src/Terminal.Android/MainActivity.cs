@@ -6,6 +6,7 @@ using Android.OS;
 using Android.Views;
 using Android.Views.InputMethods;
 using Android.Widget;
+using Terminal.Engine;
 
 namespace NativePwshConsole;
 
@@ -18,6 +19,7 @@ namespace NativePwshConsole;
 public sealed class MainActivity : Activity
 {
     private PowerShellSession? _session;
+    private TerminalEngine? _terminal;
     private NativeConsoleView? _console;
     private EditText? _input;
     private Dialog? _settingsDialog;
@@ -41,30 +43,37 @@ public sealed class MainActivity : Activity
         try
         {
             _session = TerminalRuntime.GetOrCreate(this);
+            _terminal = TerminalRuntime.GetTerminalEngine(this);
             _settings = _session.LoadSettings(settingsPath);
+            _terminal.MaxScrollback = _settings.Scrollback;
             TerminalSourcePolicy.DragonsEnabled = _settings.AllowDragons;
         }
         catch { _settings = new ConsoleSettings(); }
 
-        var root = new LinearLayout(this) { Orientation = Orientation.Vertical };
+        var root = new FrameLayout(this);
         root.SetFitsSystemWindows(true);
-        var buffer = new CellBuffer { MaxLines = _settings.Scrollback };
-        _console = new NativeConsoleView(this, buffer, _settings);
+        _terminal ??= TerminalRuntime.GetTerminalEngine(this);
+        _console = new NativeConsoleView(this, _terminal, _settings);
         _console.ViewportChanged += (columns, rows) => _session?.SetWindowSize(columns, rows);
-        root.AddView(_console, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, 0, 1));
+        _console.InputRequested += RequestTextInput;
+        root.AddView(_console, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
 
         _input = new EditText(this)
         {
-            Hint = "PowerShell command",
-            TextSize = _settings.FontSize,
-            ImeOptions = ImeAction.Send
+            TextSize = 1,
+            ImeOptions = ImeAction.Send,
+            Alpha = .01f
         };
         _input.SetSingleLine(true);
-        _input.SetTextColor(Color.ParseColor(_settings.InputForeground));
-        _input.SetHintTextColor(Color.ParseColor(_settings.HintForeground));
-        _input.SetBackgroundColor(Color.ParseColor(_settings.InputBackground));
+        _input.SetCursorVisible(false);
+        _input.SetTextColor(Color.Transparent);
+        _input.SetBackgroundColor(Color.Transparent);
+        _input.TextChanged += (_, _) =>
+            _terminal?.SetComposition(_input.Text, Math.Max(0, _input.SelectionStart));
         _input.EditorAction += OnEditorAction;
-        root.AddView(_input, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+        var bridgeLayout = new FrameLayout.LayoutParams(SettingsDp(2), SettingsDp(2), GravityFlags.Bottom | GravityFlags.Left);
+        root.AddView(_input, bridgeLayout);
         SetContentView(root);
         TerminalRuntime.AttachActivity(this);
         Window?.SetSoftInputMode(SoftInput.AdjustResize | SoftInput.StateAlwaysHidden);
@@ -74,29 +83,34 @@ public sealed class MainActivity : Activity
         AndroidBridge.StartSessionGuardian("PowerShell session", "Local CoreCLR runspace");
         if (Intent?.GetBooleanExtra("open_settings", false) == true) ShowSettingsMenu();
 
-        Task.Run(() =>
-        {
-            try
-            {
-                _session ??= TerminalRuntime.GetOrCreate(this);
-                _session.Output -= OnSessionOutput;
-                _session.Output += OnSessionOutput;
-                foreach (string diagnostic in _session.StartupDiagnostics)
-                    _console.Append($"\x1b[91m{diagnostic}\x1b[0m\n");
-                _console.Append($"PowerShell {PowerShellSession.EngineVersion}\n");
-                _console.Append(_session.GetPromptAsync().GetAwaiter().GetResult());
-            }
-            catch (Exception ex) { _console.Append($"BOOT ERROR: {ex}\n"); }
-        });
+        _console.Invalidate();
     }
 
-    private void OnSessionOutput(string text) => _console?.Append(text);
+    private void RequestTextInput()
+    {
+        if (_input == null) return;
+        _input.RequestFocus();
+        var inputMethod = (InputMethodManager?)GetSystemService(InputMethodService);
+        inputMethod?.ShowSoftInput(_input, ShowFlags.Implicit);
+    }
 
     protected override void OnResume()
     {
         base.OnResume();
         AdbLoopback.Configure(this);
         AdbLoopback.ResumeDiscovery();
+    }
+
+    protected override void OnStart()
+    {
+        base.OnStart();
+        _console?.SetPresenterActive(true);
+    }
+
+    protected override void OnStop()
+    {
+        _console?.SetPresenterActive(false);
+        base.OnStop();
     }
 
     protected override void OnNewIntent(Intent? intent)
@@ -226,6 +240,8 @@ public sealed class MainActivity : Activity
 
         var shell = new LinearLayout(this) { Orientation = Orientation.Vertical };
         shell.SetBackgroundColor(Color.ParseColor("#202124"));
+        shell.Focusable = true;
+        shell.FocusableInTouchMode = true;
 
         var header = new LinearLayout(this) { Orientation = Orientation.Horizontal };
         header.SetGravity(GravityFlags.CenterVertical);
@@ -236,7 +252,9 @@ public sealed class MainActivity : Activity
         _settingsBreadcrumbScroller = new HorizontalScrollView(this)
         {
             HorizontalScrollBarEnabled = false,
-            FillViewport = true
+            FillViewport = true,
+            Focusable = false,
+            FocusableInTouchMode = false
         };
         _settingsBreadcrumbScroller.AddView(_settingsBreadcrumbs,
             new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent));
@@ -268,6 +286,7 @@ public sealed class MainActivity : Activity
             _settingsTransitioning = false;
         };
         _settingsDialog.Show();
+        shell.RequestFocus();
         _settingsDialog.Window?.SetBackgroundDrawable(new ColorDrawable(Color.ParseColor("#202124")));
         _settingsDialog.Window?.SetLayout(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
         _settingsDialog.Window?.SetSoftInputMode(SoftInput.AdjustResize);
@@ -573,8 +592,8 @@ public sealed class MainActivity : Activity
         android.AddView(Action("Set up self-ADB  ›", () => AdbLoopback.BeginSetup()));
         android.AddView(Action("Forget self-ADB pairing  ›", () => AdbLoopback.Forget()));
         android.AddView(Action("File manager access  ›", () => AndroidBridge.RequestFileManagerAccess()));
-        android.AddView(Action("Show ADB status  ›", () => _console?.Append($"\n{AndroidBridge.GetAdbStatus()}\n")));
-        android.AddView(Action("Show settings.ps1 path  ›", () => _console?.Append($"\n{_settingsPath}\n")));
+        android.AddView(Action("Show ADB status  ›", () => _terminal?.Feed($"\r\n{AndroidBridge.GetAdbStatus()}\r\n")));
+        android.AddView(Action("Show settings.ps1 path  ›", () => _terminal?.Feed($"\r\n{_settingsPath}\r\n")));
         body.AddView(android);
 
         var about = Card("ABOUT");
@@ -664,9 +683,6 @@ public sealed class MainActivity : Activity
         _console?.SetFontSize(_settings.FontSize);
         _console?.SetScrollback(_settings.Scrollback);
         _console?.ApplyColors(_settings.Background, _settings.Foreground);
-        if (_input != null) _input.TextSize = _settings.FontSize;
-        _input?.SetTextColor(Color.ParseColor(_settings.InputForeground));
-        _input?.SetBackgroundColor(Color.ParseColor(_settings.InputBackground));
     }
 
     private void SaveSettings()
@@ -693,12 +709,17 @@ $NativeConsoleSettings = @{
         if (e.ActionId != ImeAction.Send && e.Event?.KeyCode != Keycode.Enter) return;
         e.Handled = true;
         string command = _input?.Text ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(command)) return;
         if (_input != null) _input.Text = string.Empty;
-        if (_session == null) { _console?.Append("Runspace is still starting.\n"); return; }
-        _console?.Append(_session.Highlight(command) + "\n");
+        if (string.IsNullOrWhiteSpace(command))
+        {
+            _terminal?.Feed("\r\n");
+            if (_session != null) _terminal?.Feed(await _session.GetPromptAsync());
+            return;
+        }
+        if (_session == null) { _terminal?.Feed("Runspace is still starting.\r\n"); return; }
+        _terminal?.Feed(_session.Highlight(command) + "\r\n");
         await _session.ExecuteAsync(command);
-        _console?.Append(await _session.GetPromptAsync());
+        _terminal?.Feed(await _session.GetPromptAsync());
     }
 
     private string SeedSettings()
@@ -752,8 +773,8 @@ $NativeConsoleSettings = @{
     protected override void OnDestroy()
     {
         TerminalRuntime.DetachActivity(this);
-        if (_session != null) _session.Output -= OnSessionOutput;
         _session = null;
+        _terminal = null;
         base.OnDestroy();
     }
 }

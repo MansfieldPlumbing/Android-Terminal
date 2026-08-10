@@ -9,7 +9,9 @@ Terminal hosts PowerShell directly inside an Android application on CoreCLR. It 
 ## What works today
 
 - Persistent in-process PowerShell 7 runspace on Android ARM64
-- Native Android Canvas cell presenter with ANSI colors
+- Android-free terminal engine with primary/alternate screens, cursor, scroll regions, scrollback, VT modes, OSC titles, and OSC 8 hyperlinks
+- Fixed-cell native Android Canvas presenter with ANSI 16/256/truecolor foregrounds and backgrounds, text attributes, selection, and a grid-owned cursor
+- Invisible Android IME bridge that projects live command composition into the terminal grid
 - Touch scrollback and pinch-to-zoom
 - Windows-shaped prompt, paths, `dir`, `cd`, `cd..`, `cd\`, and guarded `deltree`
 - Native settings surface, launcher shortcut, themes, font size, and scrollback controls
@@ -27,13 +29,14 @@ Run `cmds` inside Terminal to see the native command surface.
 
 ## Design
 
-Terminal keeps five boundaries deliberately small:
+Terminal keeps six boundaries deliberately small:
 
 1. The **PowerShell host** owns the runspace, commands, objects, profile, and script configuration.
-2. The **cell presenter** owns native drawing, ANSI color, scrollback, zoom, and terminal input.
-3. The **Android capability boundary** owns permissions, intents, notifications, lifecycle, and device services.
-4. **Optional transports**, including self-ADB and future remoting, expose explicit authority without silently changing ordinary sandbox behavior.
-5. **Surface hardpoints** declare typed native UI and attach PowerShell behavior without becoming compile-time dependencies of the base APK.
+2. The Android-free **TerminalEngine** owns VT parsing, screens, cells, cursor, modes, scrollback, selection state, and semantic terminal events.
+3. The **native presenter** draws visible terminal state at fixed cell coordinates and owns no terminal semantics.
+4. The **Android capability boundary** owns permissions, intents, notifications, lifecycle, clipboard, and device services.
+5. **Optional transports**, including self-ADB and future remoting, expose explicit authority without silently changing ordinary sandbox behavior.
+6. **Surface hardpoints** declare typed native UI and attach PowerShell behavior without becoming compile-time dependencies of the base APK.
 
 Android remains the security boundary. Terminal does not treat every manifest capability as consent, and elevated features must be visible, optional, and revocable.
 
@@ -72,7 +75,9 @@ The product project is `src/Terminal.Android/Terminal.Android.csproj`.
 
 ## Repository map
 
-- `src/Terminal.Android` — the only shipping application project
+- `src/Terminal.Engine` — Android-free terminal semantics and VT state machine
+- `src/Terminal.Android` — the shipping Android application and native presenter
+- `tests/Terminal.Engine.Tests` — executable terminal contract tests run by every normal build
 - `docs` — architecture and workspace boundaries
 - `scripts` — repeatable developer commands
 - `templates` — canonical user-script defaults
@@ -88,7 +93,8 @@ Code is promoted from `components` or `reference` only through an explicit, revi
 ## Current limits
 
 - Android ARM64 is the current release target.
-- The presenter implements the practical console subset Terminal needs today, not every historical VT behavior.
+- Terminal intentionally implements a practical VT subset rather than every historical DEC escape sequence.
+- Text composition is grid-projected through an invisible Android IME bridge; complete history, multiline editing, modifier semantics, and stronger PSReadLine behavior remain follow-on work.
 - Self-ADB depends on Android wireless-debugging support and explicit device-owner pairing.
 - Surface Contract 1 is experimental and intentionally small; see `docs/SURFACE-CONTRACT-1.xml` and its device proof.
 - PSRP hosting, the spatial TUI multiplexer, ShaderUI composition, and syntax-aware editor machinery remain future work.
