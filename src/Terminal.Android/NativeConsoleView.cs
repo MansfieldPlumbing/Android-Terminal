@@ -1,5 +1,6 @@
 using Android.Content;
 using Android.Graphics;
+using Android.OS;
 using Android.Views;
 using Terminal.Engine;
 
@@ -12,8 +13,10 @@ internal sealed class NativeConsoleView : View
     private readonly Paint _surfacePaint = new();
     private readonly Paint _selectionPaint = new();
     private readonly Paint _cursorPaint = new();
+    private readonly Paint _cursorAuraPaint = new(PaintFlags.AntiAlias);
     private readonly ScaleGestureDetector _scale;
     private readonly float _scaledDensity;
+    private readonly float _density;
     private float _cellWidth;
     private float _cellHeight;
     private float _baselineOffset;
@@ -25,9 +28,14 @@ internal sealed class NativeConsoleView : View
     private float _fontSize;
     private uint _defaultForeground;
     private uint _defaultBackground;
+    private string _cursorStyle;
+    private float _cursorSizeDp;
+    private int _cursorCadenceMs;
     private bool _attached;
     private bool _presenterActive;
     private bool _subscribed;
+    private TerminalSnapshot? _snapshot;
+    private int _snapshotDirty = 1;
 
     public event Action<int, int>? ViewportChanged;
     public event Action? InputRequested;
@@ -36,7 +44,11 @@ internal sealed class NativeConsoleView : View
     {
         _engine = engine;
         _scaledDensity = context.Resources?.DisplayMetrics?.ScaledDensity ?? 1f;
+        _density = context.Resources?.DisplayMetrics?.Density ?? 1f;
         _fontSize = settings.FontSize;
+        _cursorStyle = settings.CursorStyle;
+        _cursorSizeDp = settings.CursorSize;
+        _cursorCadenceMs = settings.CursorCadence;
         _paint.SetTypeface(Typeface.Monospace);
         _selectionPaint.Color = Color.Argb(92, 90, 170, 255);
         _cursorPaint.Color = Color.ParseColor("#F5F5F5");
@@ -64,11 +76,16 @@ internal sealed class NativeConsoleView : View
         base.OnDetachedFromWindow();
     }
 
-    private void OnEngineChanged() => PostInvalidate();
+    private void OnEngineChanged()
+    {
+        Interlocked.Exchange(ref _snapshotDirty, 1);
+        PostInvalidate();
+    }
 
     public void SetPresenterActive(bool active)
     {
         _presenterActive = active;
+        if (active) Interlocked.Exchange(ref _snapshotDirty, 1);
         UpdateEngineSubscription();
         if (active) Invalidate();
     }
@@ -86,7 +103,9 @@ internal sealed class NativeConsoleView : View
     {
         base.OnDraw(canvas);
         if (!_presenterActive) return;
-        TerminalSnapshot snapshot = _engine.CaptureSnapshot();
+        if (_snapshot == null || Interlocked.Exchange(ref _snapshotDirty, 0) != 0)
+            _snapshot = _engine.CaptureSnapshot();
+        TerminalSnapshot snapshot = _snapshot;
         int visibleRows = Math.Min(snapshot.Rows,
             Math.Max(1, (int)((Height - PaddingTop - PaddingBottom) / _cellHeight)));
         int visibleColumns = Math.Min(snapshot.Columns,
@@ -167,7 +186,77 @@ internal sealed class NativeConsoleView : View
             return;
         float left = PaddingLeft + cursor.Column * _cellWidth;
         float top = PaddingTop + cursor.Row * _cellHeight;
+        float centerX = left + _cellWidth * .5f;
+        float centerY = top + _cellHeight * .5f;
+        float radius = _cursorSizeDp * _density * .5f;
+        float phase = (SystemClock.UptimeMillis() % _cursorCadenceMs) / (float)_cursorCadenceMs;
+
+        switch (_cursorStyle)
+        {
+            case "Pulse":
+                DrawPulse(canvas, centerX, centerY, radius, phase);
+                break;
+            case "Beacon":
+                DrawBeacon(canvas, centerX, centerY, radius, phase);
+                break;
+            case "Portal":
+                DrawPortal(canvas, centerX, centerY, radius, phase);
+                break;
+        }
+
+        _cursorPaint.Alpha = 255;
         canvas.DrawLine(left + 1, top + 2, left + 1, top + _cellHeight - 2, _cursorPaint);
+        if (_cursorStyle != "Beam" && _presenterActive) PostInvalidateOnAnimation();
+    }
+
+    private void DrawPulse(Canvas canvas, float x, float y, float radius, float phase)
+    {
+        float breath = .72f + .28f * MathF.Sin(phase * MathF.Tau);
+        FillCursorCircle(canvas, x, y, radius * breath, 30);
+        FillCursorCircle(canvas, x, y, radius * .22f, 105);
+    }
+
+    private void DrawBeacon(Canvas canvas, float x, float y, float radius, float phase)
+    {
+        FillCursorCircle(canvas, x, y, radius * .18f, 95);
+        DrawCursorRing(canvas, x, y, radius, phase);
+        DrawCursorRing(canvas, x, y, radius, (phase + .5f) % 1f);
+    }
+
+    private void DrawPortal(Canvas canvas, float x, float y, float radius, float phase)
+    {
+        float breath = .82f + .12f * MathF.Sin(phase * MathF.Tau);
+        FillCursorCircle(canvas, x, y, radius * breath, 20);
+        FillCursorCircle(canvas, x, y, radius * .28f, 70);
+        for (int index = 0; index < 3; index++)
+        {
+            float ringPhase = (phase + index / 3f) % 1f;
+            float ringRadius = radius * (.34f + .56f * ringPhase);
+            _cursorAuraPaint.SetStyle(Paint.Style.Stroke);
+            _cursorAuraPaint.StrokeWidth = Math.Max(1.5f * _density, radius * .035f);
+            _cursorAuraPaint.Alpha = (int)(58 * (1f - ringPhase));
+            canvas.DrawCircle(x, y, ringRadius, _cursorAuraPaint);
+        }
+
+        float orbit = phase * MathF.Tau;
+        float orbitRadius = radius * .58f;
+        FillCursorCircle(canvas, x + MathF.Cos(orbit) * orbitRadius,
+            y + MathF.Sin(orbit) * orbitRadius, Math.Max(1.8f * _density, radius * .045f), 120);
+    }
+
+    private void DrawCursorRing(Canvas canvas, float x, float y, float radius, float phase)
+    {
+        _cursorAuraPaint.SetStyle(Paint.Style.Stroke);
+        _cursorAuraPaint.StrokeWidth = Math.Max(1.5f * _density, radius * .04f);
+        _cursorAuraPaint.Alpha = (int)(100 * (1f - phase));
+        canvas.DrawCircle(x, y, radius * (.2f + .8f * phase), _cursorAuraPaint);
+    }
+
+    private void FillCursorCircle(Canvas canvas, float x, float y, float radius, int alpha)
+    {
+        _cursorAuraPaint.SetStyle(Paint.Style.Fill);
+        _cursorAuraPaint.Alpha = alpha;
+        canvas.DrawCircle(x, y, radius, _cursorAuraPaint);
     }
 
     protected override void OnSizeChanged(int width, int height, int oldWidth, int oldHeight)
@@ -227,10 +316,12 @@ internal sealed class NativeConsoleView : View
     {
         TerminalCursor cursor = _engine.CaptureSnapshot(false).Cursor;
         if (!cursor.Visible) return false;
-        float cursorX = PaddingLeft + cursor.Column * _cellWidth;
-        float cursorY = PaddingTop + cursor.Row * _cellHeight;
-        return Math.Abs(x - cursorX) <= _cellWidth * 3 &&
-               y >= cursorY - _cellHeight * .5f && y <= cursorY + _cellHeight * 1.5f;
+        float cursorX = PaddingLeft + cursor.Column * _cellWidth + _cellWidth * .5f;
+        float cursorY = PaddingTop + cursor.Row * _cellHeight + _cellHeight * .5f;
+        float radius = _cursorSizeDp * _density * .5f;
+        float dx = x - cursorX;
+        float dy = y - cursorY;
+        return dx * dx + dy * dy <= radius * radius;
     }
 
     public void SetFontSize(float size)
@@ -243,12 +334,21 @@ internal sealed class NativeConsoleView : View
 
     public void SetScrollback(int lines) => _engine.MaxScrollback = Math.Clamp(lines, 100, 20000);
 
+    public void SetCursorAppearance(string style, float sizeDp, int cadenceMs)
+    {
+        _cursorStyle = style is "Beam" or "Pulse" or "Beacon" or "Portal" ? style : "Portal";
+        _cursorSizeDp = Math.Clamp(sizeDp, 32f, 112f);
+        _cursorCadenceMs = Math.Clamp(cadenceMs, 400, 3200);
+        Invalidate();
+    }
+
     public void ApplyColors(string background, string foreground)
     {
         _defaultBackground = ParseArgb(background, 0xff012456);
         _defaultForeground = ParseArgb(foreground, 0xfff5f5f5);
         SetBackgroundColor(new Color(unchecked((int)_defaultBackground)));
         _cursorPaint.Color = new Color(unchecked((int)_defaultForeground));
+        _cursorAuraPaint.Color = new Color(unchecked((int)_defaultForeground));
         Invalidate();
     }
 
