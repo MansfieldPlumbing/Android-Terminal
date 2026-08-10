@@ -1,0 +1,6 @@
+{
+  "name": "Terminal for Android",
+  "description": "This is to be a Console Host that uses an aot compiled pwsh backend that is free of reflection.    Ultimately i want to retain this UI.   the bottom menu should be the terminal picker, the right side should be an applet menu made soley from ps1 files and single file html applets that can be loaded in there should be a back swipe to close and go back to the main menu and the terminal should be front and center in the middle...   the left side should be a text editor that has line count and char count and utf-8 nothing fancy.   top menu tbd i\u0027m not sure what top there yet.. perhaps thats another row for applets.  this thing is gonna mostly be a custom applet maker and psrp pwsh p2p node.    hopefully with video capability.   do not cosplay.  keep the theme as it exists right now.  wire it up nd if u want to do anything, check out these html files this is the kind of stuff i want it to be asble to hold within it.  d oes that track with u?",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

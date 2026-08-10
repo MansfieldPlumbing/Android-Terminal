@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+*.apk
+*.aab
+artifacts/
+local.properties
+*.keystore
+*.jks
+*.pfx
+*.p12
+
+# Separate Explorer/OpenShell experiment; not part of Terminal.
+components/TUI-DWM/CONTEXTMENUS/

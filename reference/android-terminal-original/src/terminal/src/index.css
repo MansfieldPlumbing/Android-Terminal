@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+.bg-checkerboard { 
+    background-image: repeating-conic-gradient(#282828 0% 25%, transparent 0% 50%);
+    background-position: 0 0, 8px 8px;
+    background-size: 16px 16px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Force xterm cursor to blink naturally regardless of webview focus state */
+.xterm-cursor {
+    background-color: #FFFFFF !important;
+    animation: xterm-blink 1s step-end infinite !important;
+}
+.xterm-cursor-outline {
+    background-color: #FFFFFF !important;
+    outline: none !important;
+    animation: xterm-blink 1s step-end infinite !important;
+}
+@keyframes xterm-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}

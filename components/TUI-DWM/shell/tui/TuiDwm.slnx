@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="src/TuiDwm.Core/TuiDwm.Core.csproj" />
+  <Project Path="src/TuiDwm.Engine/TuiDwm.Engine.csproj" />
+  <Project Path="src/TuiDwm.Plugins/TuiDwm.Plugins.Clock/TuiDwm.Plugins.Clock.csproj" />
+  <Project Path="src/TuiDwm.Plugins/TuiDwm.Plugins.SysInfo/TuiDwm.Plugins.SysInfo.csproj" />
+  <Project Path="src/TuiDwm.Plugins/TuiDwm.Plugins.Terminal/TuiDwm.Plugins.Terminal.csproj" />
+  <Project Path="src/TuiDwm.Plugins/TuiDwm.Plugins.FileSystem3D/TuiDwm.Plugins.FileSystem3D.csproj" />
+</Solution>

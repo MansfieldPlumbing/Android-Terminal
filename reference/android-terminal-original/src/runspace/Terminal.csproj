@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <TargetFramework>net11.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>34.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationId>com.mansfieldplumbing.terminal</ApplicationId>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Frontend\**</DefaultItemExcludes>
+    <!-- Keep the toxic diagnostic thread disabled -->
+    <EnableEventPipe>false</EnableEventPipe>
+    <EventSourceSupport>false</EventSourceSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- THE FIX: Block Microsoft from injecting their broken Linux .so files -->
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.1">
+      <ExcludeAssets>native</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- FORCE the compiler to use your safe dummy libraries -->
+    <AndroidNativeLibrary Include="libs\arm64-v8a\libpsl-native.so" />
+    <AndroidNativeLibrary Include="libs\arm64-v8a\libpsl-android.so" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="pshelp.json" LogicalName="pshelp.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="VtNetCore" Version="1.0.30" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidAsset Include="Assets\**\*" />
+  </ItemGroup>
+</Project>

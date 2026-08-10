@@ -1,0 +1,12 @@
+VERSION_1.0 {
+    global:
+        SysLogProvider_OpenSysLog;
+        SysLogProvider_CloseSysLog;
+        SysLogProvider_LogSysLog;
+        Native_OpenLog;
+        Native_CloseLog;
+        Native_LogSysLog;
+        Native_SysLog;
+        GetCurrentThreadId;
+    local: *;
+};

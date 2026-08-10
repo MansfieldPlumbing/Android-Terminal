@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The Hot Pink PowerShell Chevron -->
+    <path
+        android:fillColor="#FF1493"
+        android:pathData="M 26 26 L 56 54 L 26 82 L 36 82 L 66 54 L 36 26 Z" />
+    <!-- The Hot Pink PowerShell Underscore -->
+    <path
+        android:fillColor="#FF1493"
+        android:pathData="M 50 72 L 86 72 L 86 82 L 50 82 Z" />
+</vector>
