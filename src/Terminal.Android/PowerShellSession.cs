@@ -8,6 +8,7 @@ using System.Management.Automation.Language;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
+using NativePwshConsole.Surface;
 
 namespace NativePwshConsole;
 
@@ -213,6 +214,13 @@ $command | Select-Object Name,CommandType,ModuleName,@{n='Parameters';e={($_.Par
         iss.Commands.Add(new SessionStateFunctionEntry("Get-Help", "param([string]$Name); Get-NativeHelp $Name"));
         iss.Commands.Add(new SessionStateAliasEntry("help", "Get-NativeHelp", "Native offline help"));
         iss.Commands.Add(new SessionStateAliasEntry("man", "Get-NativeHelp", "Native offline help"));
+        iss.Commands.Add(new SessionStateFunctionEntry("Start-TerminalHardpoint", """
+param([Parameter(Mandatory=$true,Position=0)][string]$Id)
+$hardpoint = Get-TerminalHardpoint -Id $Id
+$global:UI = Show-TerminalHardpoint -Id $Id
+. $hardpoint.ScriptPath
+$global:UI
+"""));
     }
 
     private void LoadProfile(string profile)
@@ -361,6 +369,32 @@ $command | Select-Object Name,CommandType,ModuleName,@{n='Parameters';e={($_.Par
     }
 
     public void Stop() { lock (_gate) _active?.Stop(); }
+
+    internal void InvokeSurfaceHandler(ScriptBlock handler, SurfaceEvent surfaceEvent)
+    {
+        lock (_gate)
+        {
+            using var ps = PowerShell.Create();
+            _active = ps;
+            ps.Runspace = _runspace;
+            ps.AddCommand("Invoke-Command")
+                .AddParameter("ScriptBlock", handler)
+                .AddParameter("ArgumentList", new object?[] { surfaceEvent });
+            try
+            {
+                ps.Invoke();
+                foreach (ErrorRecord error in ps.Streams.Error)
+                    Output?.Invoke($"\n\x1b[91mSURFACE ERROR: {error}\x1b[0m\n");
+            }
+            catch (PipelineStoppedException) { }
+            catch (Exception error)
+            {
+                Output?.Invoke($"\n\x1b[91mSURFACE ERROR: {error.Message}\x1b[0m\n");
+            }
+            finally { _active = null; }
+        }
+    }
+
     public void Dispose() { _active?.Dispose(); _runspace.Dispose(); }
 }
 

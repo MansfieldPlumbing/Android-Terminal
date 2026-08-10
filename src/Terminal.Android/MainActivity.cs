@@ -61,6 +61,7 @@ public sealed class MainActivity : Activity
         _input.EditorAction += OnEditorAction;
         root.AddView(_input, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
         SetContentView(root);
+        TerminalRuntime.AttachActivity(this);
         Window?.SetSoftInputMode(SoftInput.AdjustResize | SoftInput.StateAlwaysHidden);
         _input.RequestFocus();
         InstallLauncherShortcut();
@@ -592,6 +593,7 @@ $NativeConsoleSettings = @{
 
     protected override void OnDestroy()
     {
+        TerminalRuntime.DetachActivity(this);
         if (_session != null) _session.Output -= OnSessionOutput;
         _session = null;
         base.OnDestroy();
