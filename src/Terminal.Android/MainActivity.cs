@@ -20,7 +20,12 @@ public sealed class MainActivity : Activity
     private PowerShellSession? _session;
     private NativeConsoleView? _console;
     private EditText? _input;
-    private AlertDialog? _settingsDialog;
+    private Dialog? _settingsDialog;
+    private LinearLayout? _settingsBreadcrumbs;
+    private HorizontalScrollView? _settingsBreadcrumbScroller;
+    private FrameLayout? _settingsPaneHost;
+    private string? _settingsSection;
+    private bool _settingsTransitioning;
     private ConsoleSettings _settings = new();
     private string _settingsPath = string.Empty;
 
@@ -119,15 +124,22 @@ public sealed class MainActivity : Activity
 
     public void ShowSettingsMenu() => ShowSettingsPage(null, body =>
     {
-        body.AddView(SettingsRow("Appearance", "Theme and console colors", ShowAppearanceSettings));
-        body.AddView(SettingsRow("Terminal", $"Font {_settings.FontSize:0} sp · {_settings.Scrollback:N0} history lines", ShowTerminalSettings));
+        body.AddView(SettingsRow("Appearance",
+            $"Color schemes, font {_settings.FontSize:0} sp, and {_settings.Scrollback:N0} history lines",
+            ShowAppearanceSettings));
         body.AddView(SettingsRow("Sessions", SessionGuardianService.IsRunning ? "Protected session running" : "Background session controls", ShowSessionSettings));
         body.AddView(SettingsRow("Permissions", AdbLoopback.IsConnected ? "Self-ADB connected" : "Optional capabilities", ShowAndroidSettings));
         body.AddView(SettingsRow("Configuration", "Edit or restore settings.ps1", ShowConfigurationSettings));
-        body.AddView(SettingsRow("About", "Terminal 0.2", ShowAboutSettings));
+        body.AddView(SettingsRow("About", "Terminal v1.0", ShowAboutSettings));
     });
 
     private int SettingsDp(int value) => (int)(value * Resources!.DisplayMetrics!.Density + .5f);
+
+    private int SettingsStatusBarInset()
+    {
+        int resource = Resources?.GetIdentifier("status_bar_height", "dimen", "android") ?? 0;
+        return resource > 0 && Resources != null ? Resources.GetDimensionPixelSize(resource) : SettingsDp(24);
+    }
 
     private TextView SettingsText(string text, float size = 16, string color = "#F5F5F5")
     {
@@ -168,47 +180,159 @@ public sealed class MainActivity : Activity
         return row;
     }
 
+    private View SettingsInlineRow(string title, string caption, View trailing, Action action)
+    {
+        var wrapper = new LinearLayout(this) { Orientation = Orientation.Vertical };
+        var row = new LinearLayout(this) { Orientation = Orientation.Horizontal };
+        row.SetGravity(GravityFlags.CenterVertical);
+        row.SetPadding(SettingsDp(18), SettingsDp(12), SettingsDp(14), SettingsDp(12));
+        var words = new LinearLayout(this) { Orientation = Orientation.Vertical };
+        words.AddView(SettingsText(title, 15));
+        words.AddView(SettingsText(caption, 12, "#B6BBC7"));
+        row.AddView(words, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1));
+        row.AddView(trailing, new LinearLayout.LayoutParams(SettingsDp(82), ViewGroup.LayoutParams.WrapContent));
+        row.Click += (_, _) => action();
+        wrapper.AddView(row);
+        var divider = new View(this);
+        divider.SetBackgroundColor(Color.ParseColor("#383A40"));
+        var dividerLayout = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, SettingsDp(1));
+        dividerLayout.SetMargins(SettingsDp(18), 0, 0, 0);
+        wrapper.AddView(divider, dividerLayout);
+        return wrapper;
+    }
+
     private void ShowSettingsPage(string? section, Action<LinearLayout> populate)
     {
-        _settingsDialog?.Dismiss();
+        if (_settingsTransitioning) return;
+        EnsureSettingsShell();
+        bool firstPage = _settingsPaneHost!.ChildCount == 0;
+        int direction = firstPage ? 0 : section == null && _settingsSection != null ? -1 : 1;
+        _settingsSection = section;
+        RenderSettingsBreadcrumbs(section);
+
         var body = new LinearLayout(this) { Orientation = Orientation.Vertical };
         body.SetBackgroundColor(Color.ParseColor("#202124"));
         body.SetPadding(0, SettingsDp(8), 0, SettingsDp(22));
-        var header = new LinearLayout(this) { Orientation = Orientation.Horizontal };
-        header.SetGravity(GravityFlags.CenterVertical);
-        header.SetPadding(SettingsDp(18), SettingsDp(8), SettingsDp(12), SettingsDp(10));
-        if (section == null)
-            header.AddView(SettingsText("Settings", 27), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1));
-        else
-        {
-            var trail = new LinearLayout(this) { Orientation = Orientation.Horizontal };
-            var home = SettingsText("Settings", 14, "#9CCBFF");
-            home.SetPadding(0, SettingsDp(8), SettingsDp(8), SettingsDp(8));
-            home.Click += (_, _) => ShowSettingsMenu();
-            trail.AddView(home);
-            trail.AddView(SettingsText($"›  {section}", 14, "#B6BBC7"));
-            header.AddView(trail, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1));
-        }
-        var close = SettingsText("×", 28, "#E8E8E8");
-        close.Gravity = GravityFlags.Center;
-        close.SetPadding(SettingsDp(12), 0, SettingsDp(6), 0);
-        close.Click += (_, _) => _settingsDialog?.Dismiss();
-        header.AddView(close, new LinearLayout.LayoutParams(SettingsDp(48), SettingsDp(48)));
-        body.AddView(header);
         populate(body);
-        var scroll = new ScrollView(this); scroll.AddView(body);
-        _settingsDialog = new AlertDialog.Builder(this).SetView(scroll).Create();
-        _settingsDialog.Show();
-        var surface = new GradientDrawable();
-        surface.SetColor(Color.ParseColor("#202124"));
-        surface.SetCornerRadius(SettingsDp(14));
-        _settingsDialog.Window?.SetBackgroundDrawable(surface);
-        _settingsDialog.Window?.SetLayout(Resources!.DisplayMetrics!.WidthPixels - SettingsDp(16),
-            Resources.DisplayMetrics.HeightPixels - SettingsDp(32));
+        var scroll = new ScrollView(this) { FillViewport = true };
+        scroll.AddView(body,
+            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+        ShowSettingsPane(scroll, direction);
     }
 
-    private void ShowAppearanceSettings() => ShowSettingsPage("Appearance", body =>
+    private void EnsureSettingsShell()
     {
+        if (_settingsDialog?.IsShowing == true && _settingsPaneHost != null && _settingsBreadcrumbs != null) return;
+
+        var shell = new LinearLayout(this) { Orientation = Orientation.Vertical };
+        shell.SetBackgroundColor(Color.ParseColor("#202124"));
+
+        var header = new LinearLayout(this) { Orientation = Orientation.Horizontal };
+        header.SetGravity(GravityFlags.CenterVertical);
+        header.SetPadding(SettingsDp(12), SettingsStatusBarInset() + SettingsDp(8), SettingsDp(4), SettingsDp(8));
+
+        _settingsBreadcrumbs = new LinearLayout(this) { Orientation = Orientation.Horizontal };
+        _settingsBreadcrumbs.SetGravity(GravityFlags.CenterVertical);
+        _settingsBreadcrumbScroller = new HorizontalScrollView(this)
+        {
+            HorizontalScrollBarEnabled = false,
+            FillViewport = true
+        };
+        _settingsBreadcrumbScroller.AddView(_settingsBreadcrumbs,
+            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent));
+        header.AddView(_settingsBreadcrumbScroller,
+            new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1));
+
+        var close = SettingsText("×", 28, "#E8E8E8");
+        close.Gravity = GravityFlags.Center;
+        close.ContentDescription = "Close settings";
+        close.Clickable = true;
+        close.Click += (_, _) => _settingsDialog?.Dismiss();
+        header.AddView(close, new LinearLayout.LayoutParams(SettingsDp(48), SettingsDp(48)));
+
+        _settingsPaneHost = new FrameLayout(this);
+        shell.AddView(header,
+            new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+        shell.AddView(_settingsPaneHost,
+            new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, 0, 1));
+
+        _settingsDialog = new Dialog(this, Android.Resource.Style.ThemeMaterialNoActionBar);
+        _settingsDialog.SetContentView(shell);
+        _settingsDialog.DismissEvent += (_, _) =>
+        {
+            _settingsDialog = null;
+            _settingsBreadcrumbs = null;
+            _settingsBreadcrumbScroller = null;
+            _settingsPaneHost = null;
+            _settingsSection = null;
+            _settingsTransitioning = false;
+        };
+        _settingsDialog.Show();
+        _settingsDialog.Window?.SetBackgroundDrawable(new ColorDrawable(Color.ParseColor("#202124")));
+        _settingsDialog.Window?.SetLayout(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+        _settingsDialog.Window?.SetSoftInputMode(SoftInput.AdjustResize);
+    }
+
+    private void RenderSettingsBreadcrumbs(string? section)
+    {
+        if (_settingsBreadcrumbs == null) return;
+        _settingsBreadcrumbs.RemoveAllViews();
+
+        var home = SettingsText("Settings", 27, section == null ? "#F5F5F5" : "#B6BBC7");
+        home.SetPadding(SettingsDp(4), SettingsDp(4), SettingsDp(8), SettingsDp(4));
+        if (section != null)
+        {
+            home.Clickable = true;
+            home.ContentDescription = "Settings home";
+            home.Click += (_, _) => ShowSettingsMenu();
+        }
+        _settingsBreadcrumbs.AddView(home);
+
+        if (section != null)
+        {
+            var separator = SettingsText("›", 24, "#9CCBFF");
+            separator.SetPadding(SettingsDp(2), SettingsDp(4), SettingsDp(2), SettingsDp(4));
+            _settingsBreadcrumbs.AddView(separator);
+
+            var current = SettingsText(section, 27, "#F5F5F5");
+            current.SetPadding(SettingsDp(8), SettingsDp(4), SettingsDp(12), SettingsDp(4));
+            _settingsBreadcrumbs.AddView(current);
+        }
+
+        _settingsBreadcrumbScroller?.Post(() =>
+            _settingsBreadcrumbScroller?.FullScroll(FocusSearchDirection.Right));
+    }
+
+    private void ShowSettingsPane(View next, int direction)
+    {
+        if (_settingsPaneHost == null) return;
+        View? previous = _settingsPaneHost.ChildCount == 0
+            ? null
+            : _settingsPaneHost.GetChildAt(_settingsPaneHost.ChildCount - 1);
+        _settingsPaneHost.AddView(next,
+            new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+        if (previous == null || direction == 0) return;
+
+        float offset = SettingsDp(60) * direction;
+        var easing = new Android.Views.Animations.PathInterpolator(.25f, 1f, .5f, 1f);
+        next.TranslationX = offset;
+        next.Alpha = 0f;
+        next.Animate().TranslationX(0f).Alpha(1f).SetDuration(250).SetInterpolator(easing).Start();
+        previous.Animate().TranslationX(-offset).Alpha(0f).SetDuration(250).SetInterpolator(easing).Start();
+        _settingsTransitioning = true;
+        previous.PostDelayed(() =>
+        {
+            if (previous.Parent == _settingsPaneHost) _settingsPaneHost.RemoveView(previous);
+            _settingsTransitioning = false;
+        }, 260);
+    }
+
+    private void PopulateAppearanceSettings(LinearLayout body)
+    {
+        var heading = SettingsText("Color scheme", 13, "#B6BBC7");
+        heading.SetPadding(SettingsDp(18), SettingsDp(14), SettingsDp(18), SettingsDp(6));
+        body.AddView(heading);
+        var indicators = new List<(string Background, TextView View)>();
         foreach (var theme in new[]
         {
             (Name: "Campbell PowerShell", Caption: "PowerShell blue", Background: "#012456", Foreground: "#CCCCCC"),
@@ -218,12 +342,46 @@ public sealed class MainActivity : Activity
             (Name: "AMOLED", Caption: "True black for low light", Background: "#000000", Foreground: "#F2F2F2"),
             (Name: "Light", Caption: "Bright workspace", Background: "#F4F4F4", Foreground: "#171717")
         })
-            body.AddView(SettingsRow(theme.Name, theme.Caption,
-                () => { SetTheme(theme.Background, theme.Foreground); ApplySettings(); SaveSettings(); },
-                _settings.Background.Equals(theme.Background, StringComparison.OrdinalIgnoreCase) ? "On" : ""));
+        {
+            var indicator = SettingsText(
+                _settings.Background.Equals(theme.Background, StringComparison.OrdinalIgnoreCase) ? "✓" : "",
+                18, "#9CCBFF");
+            indicator.Gravity = GravityFlags.Center;
+            indicators.Add((theme.Background, indicator));
+            var preview = new LinearLayout(this) { Orientation = Orientation.Horizontal };
+            preview.SetGravity(GravityFlags.CenterVertical | GravityFlags.Right);
+            var swatch = new View(this);
+            var gradient = new GradientDrawable();
+            gradient.SetOrientation(GradientDrawable.Orientation.LeftRight);
+            gradient.SetColors([
+                Color.ParseColor(theme.Background).ToArgb(),
+                Color.ParseColor(theme.Foreground).ToArgb()
+            ]);
+            gradient.SetCornerRadius(SettingsDp(6));
+            gradient.SetStroke(SettingsDp(1), Color.ParseColor("#62656D"));
+            swatch.Background = gradient;
+            var swatchLayout = new LinearLayout.LayoutParams(SettingsDp(42), SettingsDp(22));
+            swatchLayout.SetMargins(0, 0, SettingsDp(6), 0);
+            preview.AddView(swatch, swatchLayout);
+            preview.AddView(indicator, new LinearLayout.LayoutParams(SettingsDp(28), SettingsDp(28)));
+            body.AddView(SettingsInlineRow(theme.Name, theme.Caption, preview, () =>
+            {
+                SetTheme(theme.Background, theme.Foreground);
+                ApplySettings();
+                SaveSettings();
+                foreach ((string candidate, TextView marker) in indicators)
+                    marker.Text = candidate.Equals(theme.Background, StringComparison.OrdinalIgnoreCase) ? "✓" : "";
+            }));
+        }
+    }
+
+    private void ShowAppearanceSettings() => ShowSettingsPage("Appearance", body =>
+    {
+        PopulateAppearanceSettings(body);
+        PopulateTerminalSettings(body);
     });
 
-    private void ShowTerminalSettings() => ShowSettingsPage("Terminal", body =>
+    private void PopulateTerminalSettings(LinearLayout body)
     {
         var fontValue = SettingsText($"Font size  ·  {_settings.FontSize:0} sp", 14, "#B6BBC7");
         fontValue.SetPadding(SettingsDp(18), SettingsDp(12), SettingsDp(18), 0); body.AddView(fontValue);
@@ -235,7 +393,7 @@ public sealed class MainActivity : Activity
         var history = new SeekBar(this) { Max = 199, Progress = Math.Clamp(_settings.Scrollback / 100 - 1, 0, 199) };
         history.ProgressChanged += (_, e) => { if (!e.FromUser) return; _settings.Scrollback = (e.Progress + 1) * 100; historyValue.Text = $"Scrollback  ·  {_settings.Scrollback:N0} lines"; ApplySettings(); SaveSettings(); };
         body.AddView(history);
-    });
+    }
 
     private void ShowSessionSettings() => ShowSettingsPage("Sessions", body =>
     {
@@ -303,7 +461,7 @@ public sealed class MainActivity : Activity
 
     private void ShowAboutSettings() => ShowSettingsPage("About", body =>
     {
-        body.AddView(SettingsRow("Terminal", "Native PowerShell for Android · no container", () => { }, "0.2"));
+        body.AddView(SettingsRow("Terminal", "Native PowerShell for Android · no container", () => { }, "v1.0"));
         body.AddView(SettingsRow("Source", "github.com/mansfieldplumbing/terminal", () =>
             StartActivity(new Intent(Intent.ActionView, Android.Net.Uri.Parse("https://github.com/mansfieldplumbing/terminal")))));
         var dedication = SettingsText("In Loving Memory\nBillie Dean Mansfield", 12, "#8F96A3");
@@ -420,7 +578,7 @@ public sealed class MainActivity : Activity
         body.AddView(android);
 
         var about = Card("ABOUT");
-        about.AddView(Label("Native PowerShell Console 0.2", 17));
+        about.AddView(Label("Native PowerShell Console v1.0", 17));
         about.AddView(Label("Android-native CoreCLR + PowerShell\nCanvas presenter • no WebView • no container", 13, "#A0A0A0"));
         about.AddView(Label("Terminal  ›", 15, "#9FD5FF"));
         var sourceLink = Label("github.com/mansfieldplumbing/terminal", 13, "#8BD5FF");

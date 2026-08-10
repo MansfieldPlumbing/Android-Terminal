@@ -10,8 +10,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationId>dev.mansfieldplumbing.terminal</ApplicationId>
-    <ApplicationVersion>2</ApplicationVersion>
-    <ApplicationDisplayVersion>0.2.0</ApplicationDisplayVersion>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <PublishTrimmed>false</PublishTrimmed>
     <EnableEventPipe>false</EnableEventPipe>
     <EventSourceSupport>false</EventSourceSupport>
