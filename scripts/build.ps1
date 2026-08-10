@@ -14,3 +14,6 @@ if ((Get-FileHash $packagedSettings).Hash -ne (Get-FileHash $spareSettings).Hash
 & $DotNet build $project -c $Configuration -r android-arm64 `
     -p:AndroidSdkDirectory=$AndroidSdk -p:JavaSdkDirectory=$JavaSdk
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+$output = Join-Path $PSScriptRoot "..\build\bin\Terminal.Android\$Configuration\net11.0-android\android-arm64"
+Write-Host "Terminal build output: $([IO.Path]::GetFullPath($output))"

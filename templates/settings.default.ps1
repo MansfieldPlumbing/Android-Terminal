@@ -1,4 +1,4 @@
-# NativePwshConsole settings. This is intentionally just PowerShell for now.
+# Terminal settings. This is intentionally just PowerShell for now.
 # The file is copied to $env:HOME/settings.ps1 on first launch and then preserved.
 $NativeConsoleSettings = @{
     Background = '#012456'
