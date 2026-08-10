@@ -219,7 +219,6 @@ param([Parameter(Mandatory=$true,Position=0)][string]$Id)
 $hardpoint = Get-TerminalHardpoint -Id $Id
 $global:UI = Show-TerminalHardpoint -Id $Id
 . $hardpoint.ScriptPath
-$global:UI
 """));
     }
 

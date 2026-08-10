@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<surface-contract version="1" status="experimental" extends="0">
+  <purpose>
+    Surface Contract 1 adds explicit fill layout and native multiline text state
+    without changing Contract 0 event ordering, origin isolation, or authority.
+  </purpose>
+  <compatibility>
+    <rule>A Contract 0 document is a valid Contract 1 document.</rule>
+    <rule>A hardpoint declares the minimum Surface API it requires in manifest.xml.</rule>
+    <rule>The base rejects a hardpoint whose declared API is newer than the renderer.</rule>
+  </compatibility>
+  <invariants>
+    <invariant>XML declares semantic structure and initial state; it contains no executable expressions.</invariant>
+    <invariant>PowerShell handlers run serially on the owning runspace, never on an Android callback.</invariant>
+    <invariant>Android callbacks update typed shadow state before enqueueing a semantic event.</invariant>
+    <invariant>Activity replacement destroys Views, not the living Surface document or its state.</invariant>
+    <invariant>Native text services remain native: IME, selection handles, and clipboard affordances are rendered by Android.</invariant>
+  </invariants>
+  <grammar>
+    <addition target="surface stack text input button image list separator">
+      <attribute name="grow" type="boolean" default="false">
+        Requests the child to consume remaining space on its parent's primary axis.
+      </attribute>
+    </addition>
+    <element name="text-area" content="empty">
+      <attribute name="id" type="identifier" required="false" />
+      <attribute name="text" type="string" required="false" />
+      <attribute name="hint" type="string" required="false" />
+      <attribute name="style" type="token" required="false" />
+      <attribute name="visible" type="boolean" default="true" />
+      <attribute name="enabled" type="boolean" default="true" />
+      <attribute name="grow" type="boolean" default="false" />
+    </element>
+  </grammar>
+  <state>
+    <property node="text-area" name="Text" type="string" mutable="true" />
+    <property node="text-area" name="Hint" type="string" mutable="true" />
+    <property node="text-area" name="Cursor" type="SurfaceCursor" mutable="false">
+      Offset, SelectionStart, and SelectionEnd are UTF-16 indices. Line and Column are one-based.
+    </property>
+  </state>
+  <events queue-capacity="256" ordering="FIFO" overflow="drop-and-log">
+    <event node="text-area" property="Changed" name="Changed" payload="Value OldValue NewValue" />
+    <event node="text-area" property="CursorChanged" name="CursorChanged" payload="SurfaceCursor" />
+  </events>
+  <example><![CDATA[
+<surface id="edit" title="Edit">
+  <stack direction="vertical" grow="true">
+    <text-area id="editor" grow="true" />
+    <text id="cursor">Ln 1, Col 1</text>
+  </stack>
+</surface>
+
+$UI.editor.Changed = { $UI.status.Text = 'MODIFIED' }
+$UI.editor.CursorChanged = {
+    param($Event)
+    $UI.cursor.Text = "Ln $($Event.Value.Line), Col $($Event.Value.Column)"
+}
+  ]]></example>
+  <non-goals>
+    Contract 1 does not define syntax highlighting, editor commands, menus, blades,
+    accessibility metadata, or a general style language. Those require separate proof.
+  </non-goals>
+</surface-contract>

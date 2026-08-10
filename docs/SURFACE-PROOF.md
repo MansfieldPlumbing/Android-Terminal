@@ -1,10 +1,10 @@
-# Surface Contract 0 proof
+# Surface Contract 0 and 1 proof
 
 Validated on 2026-08-10 using a OnePlus CPH2451 running Android 16 / API 36.
 
 ## Passing evidence
 
-- Android ARM64 build: 0 errors.
+- Android ARM64 build: 0 errors. The repository's existing analyzer/nullability warning debt remains visible.
 - `Test-SurfaceContract`: 9/9 parser, literal-text, and origin-stream checks passed on-device.
 - Hydrated hardpoint discovery: `dev.mansfield.surface-proof` loaded from APK assets without a `.csproj` asset reference.
 - Native renderer: typed nodes rendered as Android `TextView`, `EditText`, `Button`, `ListView`, and `View` instances.
@@ -19,18 +19,19 @@ Validated on 2026-08-10 using a OnePlus CPH2451 running Android 16 / API 36.
 The proof release receipt records these manufacturing hashes:
 
 ```text
-base       0722d46dcb84d9ecda2b2c7cb16b621ad3ec1e06c5ac9170872ab2ac8d40a1f2
-recipe     f1759c2df676b71659ce4ade15bbd552b9f03cce13d40ef709613873b0bf19ca
-hardpoint  aa262c4968b7e5b462720b4f5ef64976b7486b0f3be7404639f6638d1e3b93f7
-artifact   dc73d51b43bf90673271a388fe8ef64af088e890b2bcda9c8f75546ad3bb5853
+base       6c85d142e55aa171e925839d67bd9daeb3b78346879f15c43c96eb472dd7ed25
+recipe     a19fc36896121ccef9a099a561cbd153eff434f06ad7a51629f0a1bc80e77b06
+palette    5bf7f412fce570037004fbb4eb9d01ecee61d840245314428d7a365ea5f75170
+edit       51c3f085b7a88c226717bc8497ac3a689a4cfe02bb5fa26dbf669001bdd66db4
+artifact   b0d3c150056da78b791aa98332d2b0a3093acc9e2e5393037a16d011170e13c7
 ```
 
 ## Pressure revealed by the proof
 
-These are deliberately not part of Contract 0 yet:
+These are deliberately not part of Contract 1 yet:
 
 - an accessibility metadata vocabulary;
-- explicit grow, shrink, and minimum-size layout semantics;
+- shrink and minimum-size layout semantics beyond Contract 1's explicit `grow` intent;
 - a versioned style/theme contract beyond opaque style tokens;
 - list templates and richer object projections;
 - cancellation or coalescing policy for expensive live-search handlers;

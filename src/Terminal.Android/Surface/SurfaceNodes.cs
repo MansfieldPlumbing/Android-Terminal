@@ -9,6 +9,7 @@ public enum SurfaceNodeKind
     Stack,
     Text,
     Input,
+    TextArea,
     Button,
     Image,
     List,
@@ -23,6 +24,7 @@ public enum SurfaceProperty
     Hint,
     Items,
     SelectedItem,
+    Cursor,
     Visible,
     Enabled
 }
@@ -36,6 +38,13 @@ public sealed record SurfaceEvent(
     object? Item = null,
     object? OldValue = null,
     object? NewValue = null);
+
+public sealed record SurfaceCursor(
+    int Offset,
+    int SelectionStart,
+    int SelectionEnd,
+    int Line,
+    int Column);
 
 public abstract class SurfaceNode
 {
@@ -51,6 +60,7 @@ public abstract class SurfaceNode
 
     public string? Id { get; }
     public string? Style { get; }
+    public bool Grow { get; internal set; }
     public abstract SurfaceNodeKind Kind { get; }
 
     public bool Visible
@@ -192,6 +202,57 @@ public sealed class SurfaceButton : SurfaceNode
         get => Read(ref _text);
         set => Set(ref _text, value ?? string.Empty, SurfaceProperty.Text);
     }
+}
+
+public sealed class SurfaceTextArea : SurfaceNode
+{
+    private string _text;
+    private string _hint;
+    private SurfaceCursor _cursor = new(0, 0, 0, 1, 1);
+    private ScriptBlock? _changed;
+    private ScriptBlock? _cursorChanged;
+
+    public SurfaceTextArea(string? id, string? style, string text, string hint) : base(id, style)
+    {
+        _text = text;
+        _hint = hint;
+    }
+
+    public override SurfaceNodeKind Kind => SurfaceNodeKind.TextArea;
+
+    public string Text
+    {
+        get => Read(ref _text);
+        set => Set(ref _text, value ?? string.Empty, SurfaceProperty.Text);
+    }
+
+    public string Hint
+    {
+        get => Read(ref _hint);
+        set => Set(ref _hint, value ?? string.Empty, SurfaceProperty.Hint);
+    }
+
+    public SurfaceCursor Cursor => Read(ref _cursor);
+
+    public ScriptBlock? Changed
+    {
+        get => Volatile.Read(ref _changed);
+        set => Volatile.Write(ref _changed, value);
+    }
+
+    public ScriptBlock? CursorChanged
+    {
+        get => Volatile.Read(ref _cursorChanged);
+        set => Volatile.Write(ref _cursorChanged, value);
+    }
+
+    internal bool SetTextFromRenderer(string value)
+    {
+        value ??= string.Empty;
+        return SetSilently(ref _text, value);
+    }
+
+    internal bool SetCursorFromRenderer(SurfaceCursor value) => SetSilently(ref _cursor, value);
 }
 
 public sealed class SurfaceImage : SurfaceNode

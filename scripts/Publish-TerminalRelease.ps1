@@ -13,6 +13,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$SupportedSurfaceApi = 1
 
 function Get-RequiredFile([string]$Path, [string]$Label) {
     $resolved = [IO.Path]::GetFullPath($Path)
@@ -155,7 +156,9 @@ function Read-Hardpoint([string]$Root) {
     }
     $apiText = Get-RequiredAttribute $element 'surface-api'
     $api = 0
-    if (-not [int]::TryParse($apiText, [ref]$api) -or $api -ne 0) { throw "Hardpoint '$id' requires unsupported Surface API '$apiText'." }
+    if (-not [int]::TryParse($apiText, [ref]$api) -or $api -lt 0 -or $api -gt $SupportedSurfaceApi) {
+        throw "Hardpoint '$id' requires unsupported Surface API '$apiText'."
+    }
     $ui = $null
     $script = $null
     foreach ($child in (Get-ElementChildren $element)) {
@@ -285,7 +288,7 @@ function Write-Receipt([string]$Path, [object]$Data) {
         $writer.WriteStartDocument()
         $writer.WriteStartElement('terminal-release-receipt')
         $writer.WriteAttributeString('release', $Data.ReleaseId)
-        $writer.WriteAttributeString('surface-api', '0')
+        $writer.WriteAttributeString('surface-api', [string]$Data.SurfaceApi)
         $writer.WriteStartElement('base')
         $writer.WriteAttributeString('identity', $Data.BaseIdentity)
         $writer.WriteAttributeString('package-id', $Data.PackageId)
@@ -336,6 +339,7 @@ foreach ($source in $parsedRecipe.HardpointSources) {
     if (-not $hardpointIds.Add($hardpoint.Id)) { throw "Recipe contains duplicate hardpoint '$($hardpoint.Id)'." }
     $hardpoints.Add($hardpoint)
 }
+$releaseSurfaceApi = if ($hardpoints.Count -eq 0) { 0 } else { ($hardpoints | Measure-Object -Property SurfaceApi -Maximum).Maximum }
 
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
     $OutputDirectory = Join-Path $PSScriptRoot "..\build\releases\$($parsedRecipe.Id)"
@@ -423,7 +427,8 @@ try {
     if ($unexpectedSignedEntries.Count -ne 0) { throw "Signing introduced unexpected APK payload: $($unexpectedSignedEntries -join ', ')" }
     $finalHash = Get-Sha256 $signedCandidate
     Write-Receipt $receiptCandidate ([pscustomobject]@{
-        ReleaseId = $parsedRecipe.Id; BaseIdentity = $BaseIdentity; PackageId = $packageId
+        ReleaseId = $parsedRecipe.Id; SurfaceApi = $releaseSurfaceApi
+        BaseIdentity = $BaseIdentity; PackageId = $packageId
         BaseHash = $baseHash; RecipeHash = $recipeHash; Hardpoints = $hardpoints
         SigningProfile = $SigningProfile; CertificateHash = $certificateHash
         Artifact = $artifact; FinalHash = $finalHash

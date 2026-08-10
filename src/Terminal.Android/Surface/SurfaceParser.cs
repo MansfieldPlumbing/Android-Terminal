@@ -86,6 +86,7 @@ public static class SurfaceParser
             "button" => ReadText(reader, source, ids, button: true),
             "image" => ReadImage(reader, source, ids),
             "input" => ReadInput(reader, source, ids),
+            "text-area" => ReadTextArea(reader, source, ids),
             "list" => ReadEmpty(reader, source, ids, (id, style) => new SurfaceList(id, style)),
             "separator" => ReadEmpty(reader, source, ids, (id, style) => new SurfaceSeparator(id, style)),
             _ => throw Error(reader, source, $"Unknown Surface element <{name}>.")
@@ -101,8 +102,8 @@ public static class SurfaceParser
     {
         Dictionary<string, string> attributes = ReadAttributes(reader, source,
             element == "stack"
-                ? ["id", "style", "visible", "enabled", "direction"]
-                : ["id", "style", "visible", "enabled", "title"]);
+                ? ["id", "style", "visible", "enabled", "grow", "direction"]
+                : ["id", "style", "visible", "enabled", "grow", "title"]);
         bool empty = reader.IsEmptyElement;
         var children = new List<SurfaceNode>();
         if (!empty)
@@ -123,7 +124,7 @@ public static class SurfaceParser
 
     private static SurfaceNode ReadText(XmlReader reader, string source, Dictionary<string, SurfaceNode> ids, bool button)
     {
-        Dictionary<string, string> attributes = ReadAttributes(reader, source, ["id", "style", "visible", "enabled", "text"]);
+        Dictionary<string, string> attributes = ReadAttributes(reader, source, ["id", "style", "visible", "enabled", "grow", "text"]);
         string content = attributes.GetValueOrDefault("text", string.Empty);
         if (!reader.IsEmptyElement)
         {
@@ -146,9 +147,21 @@ public static class SurfaceParser
     private static SurfaceNode ReadInput(XmlReader reader, string source, Dictionary<string, SurfaceNode> ids)
     {
         Dictionary<string, string> attributes = ReadAttributes(reader, source,
-            ["id", "style", "visible", "enabled", "text", "hint"]);
+            ["id", "style", "visible", "enabled", "grow", "text", "hint"]);
         RequireEmpty(reader, source);
         var node = new SurfaceInput(Get(attributes, "id"), Get(attributes, "style"),
+            attributes.GetValueOrDefault("text", string.Empty), attributes.GetValueOrDefault("hint", string.Empty));
+        ApplyCommon(reader, source, node, attributes);
+        Register(reader, source, node, ids);
+        return node;
+    }
+
+    private static SurfaceNode ReadTextArea(XmlReader reader, string source, Dictionary<string, SurfaceNode> ids)
+    {
+        Dictionary<string, string> attributes = ReadAttributes(reader, source,
+            ["id", "style", "visible", "enabled", "grow", "text", "hint"]);
+        RequireEmpty(reader, source);
+        var node = new SurfaceTextArea(Get(attributes, "id"), Get(attributes, "style"),
             attributes.GetValueOrDefault("text", string.Empty), attributes.GetValueOrDefault("hint", string.Empty));
         ApplyCommon(reader, source, node, attributes);
         Register(reader, source, node, ids);
@@ -158,7 +171,7 @@ public static class SurfaceParser
     private static SurfaceNode ReadImage(XmlReader reader, string source, Dictionary<string, SurfaceNode> ids)
     {
         Dictionary<string, string> attributes = ReadAttributes(reader, source,
-            ["id", "style", "visible", "enabled", "src"]);
+            ["id", "style", "visible", "enabled", "grow", "src"]);
         RequireEmpty(reader, source);
         if (!attributes.TryGetValue("src", out string? src) || string.IsNullOrWhiteSpace(src))
             throw Error(reader, source, "<image> requires a non-empty 'src' attribute.");
@@ -174,7 +187,7 @@ public static class SurfaceParser
         Dictionary<string, SurfaceNode> ids,
         Func<string?, string?, SurfaceNode> create)
     {
-        Dictionary<string, string> attributes = ReadAttributes(reader, source, ["id", "style", "visible", "enabled"]);
+        Dictionary<string, string> attributes = ReadAttributes(reader, source, ["id", "style", "visible", "enabled", "grow"]);
         RequireEmpty(reader, source);
         SurfaceNode node = create(Get(attributes, "id"), Get(attributes, "style"));
         ApplyCommon(reader, source, node, attributes);
@@ -190,7 +203,7 @@ public static class SurfaceParser
         while (reader.MoveToNextAttribute())
         {
             if (reader.Prefix == "xmlns" || reader.Name == "xmlns")
-                throw Error(reader, source, "XML namespaces are not part of Surface Contract v0.");
+                throw Error(reader, source, "XML namespaces are not part of the Surface Contract.");
             if (!allowed.Contains(reader.Name, StringComparer.Ordinal))
                 throw Error(reader, source, $"Unknown attribute '{reader.Name}' on <{element}>.");
             result.Add(reader.Name, reader.Value);
@@ -215,6 +228,7 @@ public static class SurfaceParser
     {
         if (attributes.TryGetValue("visible", out string? visible)) node.Visible = ParseBool(reader, source, "visible", visible);
         if (attributes.TryGetValue("enabled", out string? enabled)) node.Enabled = ParseBool(reader, source, "enabled", enabled);
+        if (attributes.TryGetValue("grow", out string? grow)) node.Grow = ParseBool(reader, source, "grow", grow);
     }
 
     private static bool ParseBool(XmlReader reader, string source, string name, string value) =>

@@ -3,6 +3,7 @@
   <base ref="terminal" />
   <hardpoints>
     <hardpoint src="../hardpoints/dev.mansfield.surface-proof" />
+    <hardpoint src="../hardpoints/dev.mansfield.edit" />
   </hardpoints>
   <signing ref="debug" />
 </release>

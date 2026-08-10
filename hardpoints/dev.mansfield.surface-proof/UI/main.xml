@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <surface id="surfaceProof" title="Surface proof">
-  <stack direction="vertical">
+  <stack direction="vertical" grow="true">
     <text style="hero">Native PowerShell Surface</text>
     <input id="query" hint="Find commands" />
     <button id="search">Search</button>
-    <list id="results" />
+    <list id="results" grow="true" />
     <separator />
     <text id="status">Ready</text>
   </stack>

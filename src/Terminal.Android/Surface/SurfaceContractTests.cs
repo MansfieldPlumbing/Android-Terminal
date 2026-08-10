@@ -16,6 +16,7 @@ internal static class SurfaceContractTests
                   <stack direction="vertical">
                     <input id="query" hint="Find commands" />
                     <button id="search">Search</button>
+                    <text-area id="editor" grow="true" />
                     <list id="results" />
                     <text id="status">Ready</text>
                   </stack>
@@ -23,6 +24,10 @@ internal static class SurfaceContractTests
                 """, "typed-tree.xml");
             Require(document.GetNode("query") is SurfaceInput, "query was not a SurfaceInput");
             Require(document.GetNode("search") is SurfaceButton, "search was not a SurfaceButton");
+            SurfaceNode editorNode = document.GetNode("editor");
+            Require(editorNode is SurfaceTextArea && editorNode.Grow, "editor was not a growing SurfaceTextArea");
+            var textArea = (SurfaceTextArea)editorNode;
+            Require(textArea.Cursor is { Offset: 0, Line: 1, Column: 1 }, "editor cursor did not start at 1:1");
             Require(document.GetNode("results") is SurfaceList, "results was not a SurfaceList");
             Require(document.GetNode("status") is SurfaceText, "status was not a SurfaceText");
             Require(document.Origin.HardpointId == "memory", "origin was not retained");

@@ -19,8 +19,9 @@ Terminal hosts PowerShell directly inside an Android application on CoreCLR. It 
 - Android commands for vibration, flashlight, networking, permissions, and shell authority
 - Roslyn compiler services with conservative source analyzers
 - Offline native command discovery and help
-- Experimental Surface Contract 0: typed XML structure, native Android Views, and PowerShell behavior
+- Experimental Surface Contract 1: typed XML structure, native Android Views, multiline text state, and PowerShell behavior
 - Additive post-build hardpoints with deterministic hashes and signed XML release receipts
+- Additive Edit hardpoint with native multiline input, cursor/dirty state, and open/save behavior
 
 Run `cmds` inside Terminal to see the native command surface.
 
@@ -89,8 +90,8 @@ Code is promoted from `components` or `reference` only through an explicit, revi
 - Android ARM64 is the current release target.
 - The presenter implements the practical console subset Terminal needs today, not every historical VT behavior.
 - Self-ADB depends on Android wireless-debugging support and explicit device-owner pairing.
-- Surface Contract 0 is experimental and intentionally small; see `docs/SURFACE-CONTRACT-0.xml` and its device proof.
-- PSRP hosting, the spatial TUI multiplexer, ShaderUI composition, and a full native editor remain future work.
+- Surface Contract 1 is experimental and intentionally small; see `docs/SURFACE-CONTRACT-1.xml` and its device proof.
+- PSRP hosting, the spatial TUI multiplexer, ShaderUI composition, and syntax-aware editor machinery remain future work.
 
 ## Project
 

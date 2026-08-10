@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<surface id="edit" title="Edit" style="workspace">
+  <stack direction="vertical" grow="true">
+    <input id="path" hint="Home:\untitled.ps1" />
+    <stack id="commands" direction="horizontal" style="command-bar">
+      <button id="newDocument">New</button>
+      <button id="openDocument">Open</button>
+      <button id="saveDocument">Save</button>
+    </stack>
+    <text-area id="editor" style="editor" hint="Start typing" grow="true" />
+    <separator />
+    <stack id="statusBar" direction="horizontal" style="status-bar">
+      <text id="cursor" style="status">Ln 1, Col 1</text>
+      <text id="documentState" style="status" grow="true">UNTITLED</text>
+      <text id="size" style="status">0 B</text>
+    </stack>
+  </stack>
+</surface>

@@ -2,7 +2,7 @@
 
 Terminal separates the compiled Android identity from optional product cargo.
 
-The `.csproj` produces a clean base APK containing CoreCLR, PowerShell, Roslyn, the native console host, Surface Contract 0, the renderer, and the hardpoint loader. A release recipe then admits hardpoints under `assets/hardpoints/`, aligns the APK, signs it, verifies it, and writes an external XML receipt.
+The `.csproj` produces a clean base APK containing CoreCLR, PowerShell, Roslyn, the native console host, Surface Contract 1, the renderer, and the hardpoint loader. A release recipe then admits hardpoints under `assets/hardpoints/`, aligns the APK, signs it, verifies it, and writes an external XML receipt.
 
 The hydrator never edits `AndroidManifest.xml`, `resources.arsc`, `res/`, `classes*.dex`, `lib/`, or core managed assemblies. A different package ID, launcher label, launcher icon, manifest component, or Android version requires a separately compiled base. Runtime Surface branding and feature composition do not.
 
@@ -29,6 +29,7 @@ The publisher requires PowerShell 7; `build.ps1` launches the bundled `C:\bin\pw
   <base ref="terminal" />
   <hardpoints>
     <hardpoint src="../hardpoints/dev.mansfield.surface-proof" />
+    <hardpoint src="../hardpoints/dev.mansfield.edit" />
   </hardpoints>
   <signing ref="debug" />
 </release>
@@ -40,6 +41,11 @@ hardpoints/dev.mansfield.surface-proof/
     UI/main.xml
     Scripts/main.ps1
     Assets/...
+
+hardpoints/dev.mansfield.edit/
+    manifest.xml
+    UI/main.xml
+    Scripts/main.ps1
 ```
 
 Every recipe path is relative. Hardpoints may not contain links, absolute paths, path escapes, duplicate IDs, unsupported Surface API versions, or undeclared UI/script files.

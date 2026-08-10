@@ -16,7 +16,7 @@ public sealed record TerminalHardpoint(
 
 internal sealed class HardpointCatalog
 {
-    public const int SupportedSurfaceApi = 0;
+    public const int SupportedSurfaceApi = 1;
     private readonly IReadOnlyDictionary<string, TerminalHardpoint> _hardpoints;
 
     private HardpointCatalog(IReadOnlyDictionary<string, TerminalHardpoint> hardpoints, IReadOnlyList<string> diagnostics)

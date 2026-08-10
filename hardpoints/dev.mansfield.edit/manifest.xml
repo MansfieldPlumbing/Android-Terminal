@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<hardpoint id="dev.mansfield.surface-proof" surface-api="1">
+<hardpoint id="dev.mansfield.edit" surface-api="1">
   <ui src="UI/main.xml" />
   <script src="Scripts/main.ps1" />
 </hardpoint>

@@ -1,6 +1,7 @@
 using Android.App;
 using Android.Graphics;
 using Android.Graphics.Drawables;
+using Android.Text;
 using Android.Views;
 using Android.Views.InputMethods;
 using Android.Widget;
@@ -70,9 +71,10 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
             SurfaceRoot root => RenderContainer(root, Orientation.Vertical),
             SurfaceStack stack => RenderContainer(stack,
                 stack.Direction == SurfaceDirection.Horizontal ? Orientation.Horizontal : Orientation.Vertical),
-            SurfaceText text => Text(text.Text, text.Style == "hero" ? 28 : 16),
+            SurfaceText text => Text(text.Text, text.Style switch { "hero" => 28, "status" => 12, _ => 16 }),
             SurfaceButton button => RenderButton(button),
             SurfaceInput input => RenderInput(input),
+            SurfaceTextArea textArea => RenderTextArea(textArea),
             SurfaceImage image => RenderImage(image),
             SurfaceList list => RenderList(list),
             SurfaceSeparator => RenderSeparator(),
@@ -87,14 +89,19 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
     private View RenderContainer(SurfaceContainer container, Orientation orientation)
     {
         var layout = new LinearLayout(_activity) { Orientation = orientation };
-        layout.SetPadding(Dp(16), Dp(12), Dp(16), Dp(12));
+        int horizontalPadding = container.Style is "command-bar" or "status-bar" ? 4 : 16;
+        int verticalPadding = container.Style is "command-bar" or "status-bar" ? 2 : 12;
+        layout.SetPadding(Dp(horizontalPadding), Dp(verticalPadding), Dp(horizontalPadding), Dp(verticalPadding));
+        if (container.Style == "command-bar") layout.SetBackgroundColor(Color.ParseColor("#25262A"));
         foreach (SurfaceNode child in container.Children)
         {
             View view = Render(child);
             LinearLayout.LayoutParams parameters;
-            if (orientation == Orientation.Horizontal)
+            if (orientation == Orientation.Horizontal && child.Grow)
                 parameters = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1);
-            else if (child is SurfaceList or SurfaceContainer)
+            else if (orientation == Orientation.Horizontal)
+                parameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent);
+            else if (child.Grow)
                 parameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, 0, 1);
             else if (child is SurfaceSeparator)
                 parameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, Dp(1));
@@ -126,6 +133,53 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
                 _dispatcher.Enqueue(node.Changed, new SurfaceEvent(node, "Changed", next, OldValue: previous, NewValue: next));
         };
         return input;
+    }
+
+    private View RenderTextArea(SurfaceTextArea node)
+    {
+        var editor = new SurfaceTextAreaView(_activity)
+        {
+            Text = node.Text,
+            Hint = node.Hint,
+            TextSize = 15,
+            Gravity = GravityFlags.Top | GravityFlags.Start,
+            InputType = InputTypes.ClassText | InputTypes.TextFlagMultiLine | InputTypes.TextFlagNoSuggestions
+        };
+        editor.SetTypeface(Typeface.Monospace, TypefaceStyle.Normal);
+        editor.SetTextColor(Color.ParseColor("#F5F5F5"));
+        editor.SetHintTextColor(Color.ParseColor("#858585"));
+        editor.SetBackgroundColor(Color.ParseColor("#161719"));
+        editor.SetPadding(Dp(12), Dp(10), Dp(12), Dp(10));
+        editor.SetHorizontallyScrolling(false);
+        editor.SetSingleLine(false);
+        editor.TextChanged += (_, _) =>
+        {
+            string next = editor.Text ?? string.Empty;
+            string previous = node.Text;
+            if (node.SetTextFromRenderer(next))
+                _dispatcher.Enqueue(node.Changed, new SurfaceEvent(node, "Changed", next, OldValue: previous, NewValue: next));
+        };
+        editor.SelectionChanged += (start, end) =>
+        {
+            SurfaceCursor cursor = Cursor(editor.Text ?? string.Empty, start, end);
+            if (node.SetCursorFromRenderer(cursor))
+                _dispatcher.Enqueue(node.CursorChanged, new SurfaceEvent(node, "CursorChanged", cursor));
+        };
+        return editor;
+    }
+
+    private static SurfaceCursor Cursor(string text, int selectionStart, int selectionEnd)
+    {
+        int offset = Math.Clamp(selectionEnd, 0, text.Length);
+        int line = 1;
+        int lastBreak = -1;
+        for (int i = 0; i < offset; i++)
+        {
+            if (text[i] != '\n') continue;
+            line++;
+            lastBreak = i;
+        }
+        return new SurfaceCursor(offset, Math.Max(0, selectionStart), Math.Max(0, selectionEnd), line, offset - lastBreak);
     }
 
     private View RenderImage(SurfaceImage node)
@@ -202,6 +256,12 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
             case SurfaceProperty.Hint when mutation.Source is SurfaceInput input && view is EditText inputView:
                 inputView.Hint = input.Hint;
                 break;
+            case SurfaceProperty.Text when mutation.Source is SurfaceTextArea textArea && view is SurfaceTextAreaView textAreaView:
+                if (!string.Equals(textAreaView.Text, textArea.Text, StringComparison.Ordinal)) textAreaView.Text = textArea.Text;
+                break;
+            case SurfaceProperty.Hint when mutation.Source is SurfaceTextArea textArea && view is SurfaceTextAreaView textAreaView:
+                textAreaView.Hint = textArea.Hint;
+                break;
             case SurfaceProperty.Items when mutation.Source is SurfaceList && view is ListView listView:
                 ((BaseAdapter?)listView.Adapter)?.NotifyDataSetChanged();
                 break;
@@ -245,6 +305,17 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
             SurfaceListEntry[] entries = node.SnapshotEntries();
             text.Text = position >= 0 && position < entries.Length ? entries[position].Display : string.Empty;
             return text;
+        }
+    }
+
+    private sealed class SurfaceTextAreaView(Activity activity) : EditText(activity)
+    {
+        public event Action<int, int>? SelectionChanged;
+
+        protected override void OnSelectionChanged(int selStart, int selEnd)
+        {
+            base.OnSelectionChanged(selStart, selEnd);
+            SelectionChanged?.Invoke(selStart, selEnd);
         }
     }
 }
