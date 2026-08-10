@@ -2,7 +2,9 @@
 
 ## Builds today
 
-`src/Terminal.Android` is the only product project. It contains the native Android Canvas console, persistent in-process PowerShell runspace, script-backed configuration, OOBE, Android capability bridge, session notification, and locally vendored self-ADB protocol implementation.
+`src/Terminal.Android` is the only product project. It contains the native Android Canvas console, persistent in-process PowerShell runspace, script-backed configuration, OOBE, Android capability bridge, session notification, locally vendored self-ADB protocol implementation, and the stable Surface/hardpoint mechanism.
+
+`hardpoints` contains optional release cargo and `releases` selects cargo for a compiled base. Neither directory is referenced by the product `.csproj`; the additive publisher injects selected files only after the base APK exists.
 
 ## Present but not integrated
 
