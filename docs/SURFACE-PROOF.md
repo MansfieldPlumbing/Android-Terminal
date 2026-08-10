@@ -10,6 +10,7 @@ Validated on 2026-08-10 using a OnePlus CPH2451 running Android 16 / API 36.
 - Native renderer: typed nodes rendered as Android `TextView`, `EditText`, `Button`, `ListView`, and `View` instances.
 - One-way dispatch: Android callbacks returned through the bounded queue; PowerShell handlers ran on the owning runspace.
 - Live command palette: typing `process` populated results without pressing Search.
+- Managed discovery: broad and empty queries remained inside Alias/Function/Filter/Cmdlet discovery and did not call PowerShell's unavailable native `IsExecutable` probe.
 - Object identity: selecting `Get-Process` delivered the retained `CommandInfo` through `$Event.Item`, and the handler read its `Name` property.
 - Shadow state: the query and result count survived Android Activity replacement and native View reconstruction.
 - Additive admission: attempting to use the hydrated APK as a base was rejected.
@@ -20,8 +21,8 @@ The proof release receipt records these manufacturing hashes:
 ```text
 base       0722d46dcb84d9ecda2b2c7cb16b621ad3ec1e06c5ac9170872ab2ac8d40a1f2
 recipe     f1759c2df676b71659ce4ade15bbd552b9f03cce13d40ef709613873b0bf19ca
-hardpoint  c9329b0a6957107a98844a670cb5d6ad06697664998671ba04e3aa6dd5701673
-artifact   4bab4912748c6df397620ba2b5ca5305c76a5194ad0aed3fa015134901836f87
+hardpoint  aa262c4968b7e5b462720b4f5ef64976b7486b0f3be7404639f6638d1e3b93f7
+artifact   dc73d51b43bf90673271a388fe8ef64af088e890b2bcda9c8f75546ad3bb5853
 ```
 
 ## Pressure revealed by the proof
