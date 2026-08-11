@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework Condition="'$(RuntimeIdentifier)' != 'android-arm64'">net11.0</TargetFramework>
+    <TargetFramework Condition="'$(RuntimeIdentifier)' == 'android-arm64'">net11.0-android</TargetFramework>
+    <AssemblyName>terminal-router</AssemblyName>
+    <RootNamespace>Terminal.Router</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'android-arm64'">
+    <OutputType>Exe</OutputType>
+    <ApplicationId>dev.mansfieldplumbing.terminal.router</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <SupportedOSPlatformVersion>35.0</SupportedOSPlatformVersion>
+    <LatestSupportedJavaVersion>25.0.99</LatestSupportedJavaVersion>
+    <JavacSourceVersion>11</JavacSourceVersion>
+    <JavacTargetVersion>11</JavacTargetVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="RouterProtocol.cs" />
+    <Compile Include="RouterHost.cs" />
+    <Compile Include="IPtySession.cs" />
+    <Compile Include="WindowsPtySession.cs" />
+    <Compile Include="AndroidPtySession.cs" />
+  </ItemGroup>
+</Project>
