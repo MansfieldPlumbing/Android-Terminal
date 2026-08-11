@@ -4,6 +4,8 @@ cmake_policy(SET CMP0091 NEW)
 
 project(TerminalRouter LANGUAGES C CXX)
 
+enable_testing()
+
 set(
     CMAKE_MSVC_RUNTIME_LIBRARY
     "MultiThreaded$<$<CONFIG:Debug>:Debug>"
@@ -73,4 +75,32 @@ if(WIN32)
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${TERMINAL_ROUTER_WIN_DIR}"
     )
     add_dependencies(terminal_router_nativeaot terminal_router_pty)
+
+    set(
+        TERMINAL_PWSH
+        "C:/bin/pwsh/pwsh.exe"
+        CACHE FILEPATH
+        "PowerShell executable used by the Windows router receipt"
+    )
+    add_executable(test_terminal_conpty_router
+        tests/native/integration/test_terminal_conpty_router.cpp
+    )
+    target_link_libraries(test_terminal_conpty_router PRIVATE
+        terminal_router_client
+    )
+    add_dependencies(test_terminal_conpty_router terminal_router_nativeaot)
+    add_test(
+        NAME test_terminal_conpty_router
+        COMMAND test_terminal_conpty_router
+                "${TERMINAL_ROUTER_WIN_EXE}"
+                "${TERMINAL_PWSH}"
+    )
+    set_tests_properties(test_terminal_conpty_router PROPERTIES TIMEOUT 60)
+elseif(ANDROID)
+    add_executable(test_terminal_pty_router_android
+        tests/native/integration/test_terminal_pty_router_android.cpp
+    )
+    target_link_libraries(test_terminal_pty_router_android PRIVATE
+        terminal_router_client
+    )
 endif()
