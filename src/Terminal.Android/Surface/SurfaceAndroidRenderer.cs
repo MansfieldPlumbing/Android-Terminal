@@ -32,8 +32,9 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
     {
         if (_activity.IsFinishing || _activity.IsDestroyed) return;
         var shell = new LinearLayout(_activity) { Orientation = Orientation.Vertical };
-        shell.SetBackgroundColor(Color.ParseColor("#202124"));
-        shell.AddView(CreateChrome(), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, Dp(54)));
+        shell.SetBackgroundColor(SurfaceTheme.Background);
+        shell.AddView(CreateChrome(), new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MatchParent, Dp(SurfaceTheme.ChromeHeightDp)));
         View content = Render(_document.Root);
         shell.AddView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, 0, 1));
         foreach (SurfaceNode node in _document.Walk()) node.Mutated += OnMutated;
@@ -44,23 +45,25 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
         _dialog.Show();
         _dialog.Window?.SetLayout(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
         _dialog.Window?.SetSoftInputMode(SoftInput.AdjustResize);
-        _dialog.Window?.SetBackgroundDrawable(new ColorDrawable(Color.ParseColor("#202124")));
+        _dialog.Window?.SetBackgroundDrawable(new ColorDrawable(SurfaceTheme.Background));
     }
 
     private View CreateChrome()
     {
         var chrome = new LinearLayout(_activity) { Orientation = Orientation.Horizontal };
         chrome.SetGravity(GravityFlags.CenterVertical);
-        chrome.SetPadding(Dp(16), 0, Dp(4), 0);
-        chrome.SetBackgroundColor(Color.ParseColor("#25262A"));
-        var title = Text(_document.Root.Title ?? _document.Origin.HardpointId, 16);
+        chrome.SetPadding(Dp(SurfaceTheme.ChromeHorizontalPaddingDp), 0,
+            Dp(SurfaceTheme.CompactPaddingDp), 0);
+        chrome.SetBackgroundColor(SurfaceTheme.Raised);
+        var title = Text(_document.Root.Title ?? _document.Origin.HardpointId, SurfaceTheme.BodyTextSp);
         chrome.AddView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1));
-        var close = Text("×", 28);
+        var close = Text("\u00D7", SurfaceTheme.CloseTextSp);
         close.Gravity = GravityFlags.Center;
         close.Clickable = true;
         close.ContentDescription = "Close";
         close.Click += (_, _) => _dialog?.Dismiss();
-        chrome.AddView(close, new LinearLayout.LayoutParams(Dp(48), Dp(48)));
+        chrome.AddView(close, new LinearLayout.LayoutParams(
+            Dp(SurfaceTheme.ChromeCloseWidthDp), Dp(SurfaceTheme.ChromeCloseWidthDp)));
         return chrome;
     }
 
@@ -71,7 +74,12 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
             SurfaceRoot root => RenderContainer(root, Orientation.Vertical),
             SurfaceStack stack => RenderContainer(stack,
                 stack.Direction == SurfaceDirection.Horizontal ? Orientation.Horizontal : Orientation.Vertical),
-            SurfaceText text => Text(text.Text, text.Style switch { "hero" => 28, "status" => 12, _ => 16 }),
+            SurfaceText text => Text(text.Text, text.Style switch
+            {
+                SurfaceStyleCatalog.Hero => SurfaceTheme.HeroTextSp,
+                SurfaceStyleCatalog.Status => SurfaceTheme.StatusTextSp,
+                _ => SurfaceTheme.BodyTextSp
+            }),
             SurfaceButton button => RenderButton(button),
             SurfaceInput input => RenderInput(input),
             SurfaceTextArea textArea => RenderTextArea(textArea),
@@ -89,10 +97,12 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
     private View RenderContainer(SurfaceContainer container, Orientation orientation)
     {
         var layout = new LinearLayout(_activity) { Orientation = orientation };
-        int horizontalPadding = container.Style is "command-bar" or "status-bar" ? 4 : 16;
-        int verticalPadding = container.Style is "command-bar" or "status-bar" ? 2 : 12;
+        int horizontalPadding = container.Style is SurfaceStyleCatalog.CommandBar or SurfaceStyleCatalog.StatusBar
+            ? SurfaceTheme.CompactPaddingDp : SurfaceTheme.ContentHorizontalPaddingDp;
+        int verticalPadding = container.Style is SurfaceStyleCatalog.CommandBar or SurfaceStyleCatalog.StatusBar
+            ? SurfaceTheme.CompactVerticalPaddingDp : SurfaceTheme.ContentVerticalPaddingDp;
         layout.SetPadding(Dp(horizontalPadding), Dp(verticalPadding), Dp(horizontalPadding), Dp(verticalPadding));
-        if (container.Style == "command-bar") layout.SetBackgroundColor(Color.ParseColor("#25262A"));
+        if (container.Style == SurfaceStyleCatalog.CommandBar) layout.SetBackgroundColor(SurfaceTheme.Raised);
         foreach (SurfaceNode child in container.Children)
         {
             View view = Render(child);
@@ -107,7 +117,7 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
                 parameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, Dp(1));
             else
                 parameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent);
-            parameters.SetMargins(0, Dp(4), 0, Dp(4));
+            parameters.SetMargins(0, Dp(SurfaceTheme.ChildGapDp), 0, Dp(SurfaceTheme.ChildGapDp));
             layout.AddView(view, parameters);
         }
         return layout;
@@ -123,7 +133,12 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
 
     private View RenderInput(SurfaceInput node)
     {
-        var input = new EditText(_activity) { Text = node.Text, Hint = node.Hint, TextSize = 16 };
+        var input = new EditText(_activity)
+        {
+            Text = node.Text,
+            Hint = node.Hint,
+            TextSize = SurfaceTheme.BodyTextSp
+        };
         input.SetSingleLine(true);
         input.TextChanged += (_, _) =>
         {
@@ -141,15 +156,16 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
         {
             Text = node.Text,
             Hint = node.Hint,
-            TextSize = 15,
+            TextSize = SurfaceTheme.EditorTextSp,
             Gravity = GravityFlags.Top | GravityFlags.Start,
             InputType = InputTypes.ClassText | InputTypes.TextFlagMultiLine | InputTypes.TextFlagNoSuggestions
         };
         editor.SetTypeface(Typeface.Monospace, TypefaceStyle.Normal);
-        editor.SetTextColor(Color.ParseColor("#F5F5F5"));
-        editor.SetHintTextColor(Color.ParseColor("#858585"));
-        editor.SetBackgroundColor(Color.ParseColor("#161719"));
-        editor.SetPadding(Dp(12), Dp(10), Dp(12), Dp(10));
+        editor.SetTextColor(SurfaceTheme.Foreground);
+        editor.SetHintTextColor(SurfaceTheme.MutedForeground);
+        editor.SetBackgroundColor(SurfaceTheme.EditorBackground);
+        editor.SetPadding(Dp(SurfaceTheme.EditorHorizontalPaddingDp), Dp(SurfaceTheme.EditorVerticalPaddingDp),
+            Dp(SurfaceTheme.EditorHorizontalPaddingDp), Dp(SurfaceTheme.EditorVerticalPaddingDp));
         editor.SetHorizontallyScrolling(false);
         editor.SetSingleLine(false);
         editor.TextChanged += (_, _) =>
@@ -223,7 +239,7 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
     private View RenderSeparator()
     {
         var separator = new View(_activity);
-        separator.SetBackgroundColor(Color.ParseColor("#45464B"));
+        separator.SetBackgroundColor(SurfaceTheme.Divider);
         separator.LayoutParameters = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, Dp(1));
         return separator;
     }
@@ -271,8 +287,9 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
     private TextView Text(string value, float size)
     {
         var text = new TextView(_activity) { Text = value, TextSize = size };
-        text.SetTextColor(Color.ParseColor("#F5F5F5"));
-        text.SetPadding(Dp(4), Dp(4), Dp(4), Dp(4));
+        text.SetTextColor(SurfaceTheme.Foreground);
+        text.SetPadding(Dp(SurfaceTheme.CompactPaddingDp), Dp(SurfaceTheme.CompactPaddingDp),
+            Dp(SurfaceTheme.CompactPaddingDp), Dp(SurfaceTheme.CompactPaddingDp));
         return text;
     }
 
@@ -298,9 +315,10 @@ internal sealed class SurfaceAndroidRenderer : IDisposable
 
         public override View GetView(int position, View? convertView, ViewGroup? parent)
         {
-            var text = convertView as TextView ?? new TextView(activity) { TextSize = 16 };
-            text.SetTextColor(Color.ParseColor("#F5F5F5"));
-            int padding = (int)(12 * (activity.Resources?.DisplayMetrics?.Density ?? 1f) + .5f);
+            var text = convertView as TextView ?? new TextView(activity) { TextSize = SurfaceTheme.BodyTextSp };
+            text.SetTextColor(SurfaceTheme.Foreground);
+            int padding = (int)(SurfaceTheme.ListRowPaddingDp *
+                (activity.Resources?.DisplayMetrics?.Density ?? 1f) + .5f);
             text.SetPadding(padding, padding, padding, padding);
             SurfaceListEntry[] entries = node.SnapshotEntries();
             text.Text = position >= 0 && position < entries.Length ? entries[position].Display : string.Empty;

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="unqualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      Terminal hardpoint manifest schema. Path containment, file existence,
+      origin isolation, and supported API range remain semantic admission checks.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="hardpointId">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="128" />
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="nonEmptyPath">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="documentReference">
+    <xs:attribute name="src" type="nonEmptyPath" use="required" />
+  </xs:complexType>
+
+  <xs:element name="hardpoint">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="ui" type="documentReference" minOccurs="1" maxOccurs="1" />
+        <xs:element name="script" type="documentReference" minOccurs="1" maxOccurs="1" />
+      </xs:all>
+      <xs:attribute name="id" type="hardpointId" use="required" />
+      <xs:attribute name="surface-api" type="xs:nonNegativeInteger" use="required" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

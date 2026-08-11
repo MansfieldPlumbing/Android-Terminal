@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<surface id="gallery" title="Surface gallery" style="workspace">
+  <stack direction="vertical" grow="true">
+    <text style="hero">Surface API 1</text>
+    <text>Typed native controls with PowerShell behavior.</text>
+    <separator />
+    <input id="query" hint="Filter the pattern list" />
+    <stack id="commands" direction="horizontal" style="command-bar">
+      <button id="accept">Accept</button>
+      <button id="clear">Clear</button>
+    </stack>
+    <list id="patterns" grow="true" />
+    <text-area id="notes" style="editor" hint="Multiline native text" />
+    <stack id="statusBar" direction="horizontal" style="status-bar">
+      <text id="status" style="status" grow="true">READY</text>
+      <text style="status">CONTRACT 1</text>
+    </stack>
+  </stack>
+</surface>

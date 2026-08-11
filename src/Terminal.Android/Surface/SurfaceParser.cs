@@ -226,6 +226,9 @@ public static class SurfaceParser
 
     private static void ApplyCommon(XmlReader reader, string source, SurfaceNode node, Dictionary<string, string> attributes)
     {
+        if (!SurfaceStyleCatalog.IsAllowed(node.Kind, node.Style))
+            throw Error(reader, source,
+                $"Style '{node.Style}' is not valid for <{reader.Name}>; expected {SurfaceStyleCatalog.Describe(node.Kind)}.");
         if (attributes.TryGetValue("visible", out string? visible)) node.Visible = ParseBool(reader, source, "visible", visible);
         if (attributes.TryGetValue("enabled", out string? enabled)) node.Enabled = ParseBool(reader, source, "enabled", enabled);
         if (attributes.TryGetValue("grow", out string? grow)) node.Grow = ParseBool(reader, source, "grow", grow);

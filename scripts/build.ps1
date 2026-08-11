@@ -18,6 +18,10 @@ $spareSettings = Join-Path $PSScriptRoot '..\templates\settings.default.ps1'
 if ((Get-FileHash $packagedSettings).Hash -ne (Get-FileHash $spareSettings).Hash) {
     throw 'templates/settings.default.ps1 has drifted from the packaged Assets/settings.ps1.'
 }
+& (Join-Path $PSScriptRoot 'Test-TerminalSchemas.ps1')
+if (-not $?) { exit 1 }
+& (Join-Path $PSScriptRoot 'Test-TerminalArchitecture.ps1')
+if (-not $?) { exit 1 }
 & $DotNet run --project $engineTests -c $Configuration
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 & $DotNet build $project -c $Configuration -r android-arm64 `

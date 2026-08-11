@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="unqualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      Terminal Surface API 1. XML declares typed semantic structure and initial
+      state only. It contains no executable expressions, bindings, platform
+      types, event handlers, or Android resource identifiers.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="surfaceId">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_-]*" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="strictBoolean">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="true" />
+      <xs:enumeration value="false" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="direction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="vertical" />
+      <xs:enumeration value="horizontal" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="workspaceStyle">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="workspace" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="stackStyle">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="command-bar" />
+      <xs:enumeration value="status-bar" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="textStyle">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="hero" />
+      <xs:enumeration value="status" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="editorStyle">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="editor" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="resourcePath">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:attributeGroup name="nodeAttributes">
+    <xs:attribute name="id" type="surfaceId" use="optional" />
+    <xs:attribute name="visible" type="strictBoolean" use="optional" default="true" />
+    <xs:attribute name="enabled" type="strictBoolean" use="optional" default="true" />
+    <xs:attribute name="grow" type="strictBoolean" use="optional" default="false" />
+  </xs:attributeGroup>
+
+  <xs:group name="surfaceChildren">
+    <xs:choice>
+      <xs:element name="stack" type="stackType" />
+      <xs:element name="text" type="textType" />
+      <xs:element name="input" type="inputType" />
+      <xs:element name="text-area" type="textAreaType" />
+      <xs:element name="button" type="buttonType" />
+      <xs:element name="image" type="imageType" />
+      <xs:element name="list" type="emptyNodeType" />
+      <xs:element name="separator" type="emptyNodeType" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="surfaceType">
+    <xs:sequence>
+      <xs:group ref="surfaceChildren" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="style" type="workspaceStyle" use="optional" />
+    <xs:attribute name="title" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="stackType">
+    <xs:sequence>
+      <xs:group ref="surfaceChildren" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="style" type="stackStyle" use="optional" />
+    <xs:attribute name="direction" type="direction" use="optional" default="vertical" />
+  </xs:complexType>
+
+  <xs:complexType name="textType" mixed="true">
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="style" type="textStyle" use="optional" />
+    <xs:attribute name="text" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="buttonType" mixed="true">
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="text" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="inputType">
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="text" type="xs:string" use="optional" />
+    <xs:attribute name="hint" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="textAreaType">
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="style" type="editorStyle" use="optional" />
+    <xs:attribute name="text" type="xs:string" use="optional" />
+    <xs:attribute name="hint" type="xs:string" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="imageType">
+    <xs:attributeGroup ref="nodeAttributes" />
+    <xs:attribute name="src" type="resourcePath" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="emptyNodeType">
+    <xs:attributeGroup ref="nodeAttributes" />
+  </xs:complexType>
+
+  <xs:element name="surface" type="surfaceType">
+    <xs:unique name="uniqueDescendantIds">
+      <xs:selector xpath=".//*" />
+      <xs:field xpath="@id" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>
