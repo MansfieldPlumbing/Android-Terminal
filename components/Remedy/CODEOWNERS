@@ -1,7 +1,0 @@
-/src/native/core/ @MansfieldPlumbing
-/src/native/platform/ @MansfieldPlumbing
-/include/remedy/ @MansfieldPlumbing
-/tests/ @MansfieldPlumbing
-/.github/workflows/ @MansfieldPlumbing
-/docs/invariants.md @MansfieldPlumbing
-/docs/architecture-contract.md @MansfieldPlumbing

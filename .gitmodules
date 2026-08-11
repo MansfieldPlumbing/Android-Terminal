@@ -1,0 +1,3 @@
+[submodule "deps/Remedy"]
+	path = deps/Remedy
+	url = https://github.com/MansfieldPlumbing/Remedy.git
