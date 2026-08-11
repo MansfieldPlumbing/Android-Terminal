@@ -28,6 +28,8 @@ public sealed class MainActivity : Activity
     private FrameLayout? _settingsPaneHost;
     private string? _settingsSection;
     private bool _settingsTransitioning;
+    private bool _settingsStandalone;
+    private readonly List<SettingsPage> _settingsPages = [];
     private ConsoleSettings _settings = new();
     private string _settingsPath = string.Empty;
 
@@ -84,7 +86,7 @@ public sealed class MainActivity : Activity
         InstallLauncherShortcut();
         Oobe.ShowIfNeeded(this);
         AndroidBridge.StartSessionGuardian("PowerShell session", "Local CoreCLR runspace");
-        if (Intent?.GetBooleanExtra("open_settings", false) == true) ShowSettingsMenu();
+        OpenSettingsFromIntent(Intent);
 
         _console.Invalidate();
     }
@@ -120,7 +122,7 @@ public sealed class MainActivity : Activity
     {
         base.OnNewIntent(intent);
         Intent = intent;
-        if (intent?.GetBooleanExtra("open_settings", false) == true) ShowSettingsMenu();
+        OpenSettingsFromIntent(intent);
     }
 
     public override void OnConfigurationChanged(Android.Content.Res.Configuration newConfig)
@@ -134,8 +136,9 @@ public sealed class MainActivity : Activity
         if (Build.VERSION.SdkInt < BuildVersionCodes.NMr1) return;
         var manager = (Android.Content.PM.ShortcutManager)GetSystemService(ShortcutService)!;
         var intent = new Intent(this, typeof(MainActivity));
-        intent.SetAction(Intent.ActionView);
+        intent.SetAction("dev.mansfield.terminal.OPEN_SETTINGS");
         intent.PutExtra("open_settings", true);
+        intent.PutExtra("settings_standalone", true);
         var shortcut = new Android.Content.PM.ShortcutInfo.Builder(this, "settings")
             .SetShortLabel("Settings")
             .SetLongLabel("Settings")
@@ -145,7 +148,22 @@ public sealed class MainActivity : Activity
         manager.SetDynamicShortcuts([shortcut]);
     }
 
-    public void ShowSettingsMenu() => ShowSettingsPage(null, body =>
+    private void OpenSettingsFromIntent(Intent? intent)
+    {
+        if (intent?.GetBooleanExtra("open_settings", false) != true) return;
+        _settingsStandalone = intent.GetBooleanExtra("settings_standalone", false);
+        ShowSettingsRoot();
+    }
+
+    public void ShowSettingsMenu()
+    {
+        _settingsStandalone = false;
+        ShowSettingsRoot();
+    }
+
+    private void ShowSettingsRoot() => ShowSettingsPage(null, PopulateSettingsRoot);
+
+    private void PopulateSettingsRoot(LinearLayout body)
     {
         body.AddView(SettingsRow("Appearance",
             $"Color schemes, font {_settings.FontSize:0} sp, and {_settings.Scrollback:N0} history lines",
@@ -157,7 +175,7 @@ public sealed class MainActivity : Activity
         body.AddView(SettingsRow("Permissions", AdbLoopback.IsConnected ? "Self-ADB connected" : "Optional capabilities", ShowAndroidSettings));
         body.AddView(SettingsRow("Configuration", "Edit or restore settings.ps1", ShowConfigurationSettings));
         body.AddView(SettingsRow("About", "Terminal v1.0", ShowAboutSettings));
-    });
+    }
 
     private int SettingsDp(int value) => (int)(value * Resources!.DisplayMetrics!.Density + .5f);
 
@@ -231,19 +249,58 @@ public sealed class MainActivity : Activity
     {
         if (_settingsTransitioning) return;
         EnsureSettingsShell();
-        bool firstPage = _settingsPaneHost!.ChildCount == 0;
-        int direction = firstPage ? 0 : section == null && _settingsSection != null ? -1 : 1;
-        _settingsSection = section;
-        RenderSettingsBreadcrumbs(section);
+
+        if (section == null)
+            _settingsPages.Clear();
+        else if (_settingsPages.Count > 0 && _settingsPages[^1].Section == section)
+            _settingsPages.RemoveAt(_settingsPages.Count - 1);
+
+        var page = new SettingsPage(section, populate);
+        _settingsPages.Add(page);
+        RenderSettingsPage(page, _settingsPaneHost!.ChildCount == 0 ? 0 : section == null ? -1 : 1);
+    }
+
+    private void RenderSettingsPage(SettingsPage page, int direction)
+    {
+        _settingsSection = page.Section;
+        RenderSettingsBreadcrumbs(page.Section);
 
         var body = new LinearLayout(this) { Orientation = Orientation.Vertical };
         body.SetBackgroundColor(Color.ParseColor("#202124"));
         body.SetPadding(0, SettingsDp(8), 0, SettingsDp(22));
-        populate(body);
+        page.Populate(body);
         var scroll = new ScrollView(this) { FillViewport = true };
         scroll.AddView(body,
             new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
         ShowSettingsPane(scroll, direction);
+    }
+
+    private void NavigateSettingsBack()
+    {
+        if (_settingsTransitioning) return;
+        if (_settingsPages.Count > 1)
+        {
+            _settingsPages.RemoveAt(_settingsPages.Count - 1);
+            RenderSettingsPage(_settingsPages[^1], -1);
+            return;
+        }
+
+        CloseSettingsApplet();
+    }
+
+    private void NavigateSettingsHome()
+    {
+        if (_settingsTransitioning || _settingsPages.Count <= 1) return;
+        SettingsPage root = _settingsPages[0];
+        _settingsPages.RemoveRange(1, _settingsPages.Count - 1);
+        RenderSettingsPage(root, -1);
+    }
+
+    private void CloseSettingsApplet()
+    {
+        bool finishTask = _settingsStandalone;
+        _settingsDialog?.Dismiss();
+        if (finishTask) Window?.DecorView?.Post(FinishAndRemoveTask);
     }
 
     private void EnsureSettingsShell()
@@ -277,7 +334,7 @@ public sealed class MainActivity : Activity
         close.Gravity = GravityFlags.Center;
         close.ContentDescription = "Close settings";
         close.Clickable = true;
-        close.Click += (_, _) => _settingsDialog?.Dismiss();
+        close.Click += (_, _) => CloseSettingsApplet();
         header.AddView(close, new LinearLayout.LayoutParams(SettingsDp(48), SettingsDp(48)));
 
         _settingsPaneHost = new FrameLayout(this);
@@ -286,7 +343,7 @@ public sealed class MainActivity : Activity
         shell.AddView(_settingsPaneHost,
             new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, 0, 1));
 
-        _settingsDialog = new Dialog(this, Android.Resource.Style.ThemeMaterialNoActionBar);
+        _settingsDialog = new SettingsNavigationDialog(this, NavigateSettingsBack);
         _settingsDialog.SetContentView(shell);
         _settingsDialog.DismissEvent += (_, _) =>
         {
@@ -296,6 +353,7 @@ public sealed class MainActivity : Activity
             _settingsPaneHost = null;
             _settingsSection = null;
             _settingsTransitioning = false;
+            _settingsPages.Clear();
         };
         _settingsDialog.Show();
         shell.RequestFocus();
@@ -315,7 +373,7 @@ public sealed class MainActivity : Activity
         {
             home.Clickable = true;
             home.ContentDescription = "Settings home";
-            home.Click += (_, _) => ShowSettingsMenu();
+            home.Click += (_, _) => NavigateSettingsHome();
         }
         _settingsBreadcrumbs.AddView(home);
 
@@ -838,5 +896,19 @@ $NativeConsoleSettings = @{
         _session = null;
         _terminal = null;
         base.OnDestroy();
+    }
+
+    private sealed record SettingsPage(string? Section, Action<LinearLayout> Populate);
+
+    private sealed class SettingsNavigationDialog : Dialog
+    {
+        private readonly Action _navigateBack;
+
+        public SettingsNavigationDialog(Activity activity, Action navigateBack)
+            : base(activity, Android.Resource.Style.ThemeMaterialNoActionBar) => _navigateBack = navigateBack;
+
+#pragma warning disable CS0672
+        public override void OnBackPressed() => _navigateBack();
+#pragma warning restore CS0672
     }
 }
