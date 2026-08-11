@@ -85,10 +85,10 @@ The product project is `src/Terminal.Android/Terminal.Android.csproj`.
 - `releases` — additive cargo and signing-profile recipes
 - `components/TUI-DWM` — future spatial cell-surface candidate; not included in the APK
 - `components/ShaderUI` — future composited-renderer candidate; not included in the APK
-- `components/Remedy` — runtime/session-lifetime research; not a Terminal dependency
+- `deps/Remedy` — pinned authority/lifecycle infrastructure consumed through Terminal's native adapter
 - `reference/android-terminal-original` — deprecated implementation preserved for archaeology
 
-Code is promoted from `components` or `reference` only through an explicit, reviewed contract. Presence in this repository does not mean a component ships.
+Code is promoted from `components` or `reference` only through an explicit, reviewed contract. Dependencies under `deps` are pinned to audited commits; presence in this repository still does not mean a component ships in the Android application.
 
 ## Current limits
 
