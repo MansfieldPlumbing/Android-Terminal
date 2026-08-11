@@ -6,6 +6,37 @@ The `.csproj` produces a clean base APK containing CoreCLR, PowerShell, Roslyn, 
 
 The hydrator never edits `AndroidManifest.xml`, `resources.arsc`, `res/`, `classes*.dex`, `lib/`, or core managed assemblies. A different package ID, launcher label, launcher icon, manifest component, or Android version requires a separately compiled base. Runtime Surface branding and feature composition do not.
 
+## Distribution profiles are admission policy
+
+Release channels may share BOS semantics without admitting the same package origins.
+
+```text
+Play profile
+    executable cargo delivered inside the Play-distributed artifact
+    interpreted hardpoints admitted only under the declared Terminal policy
+    no external dex, JAR or .so download/admission
+
+Owner / sideload profile
+    may admit explicitly user-obtained cargo
+    still requires provenance, digest, manifest, consent and worker containment
+```
+
+Google Play currently prohibits Play-distributed apps from downloading executable code such as dex, JAR or `.so` files from outside Google Play. Interpreted code loaded at runtime remains responsible for complying with every Play policy. Therefore a Play recipe must fail manufacturing if it enables an external native/package acquisition path; a runtime setting is not a sufficient distribution boundary.
+
+This restriction belongs to release admission, not BOS ontology. `ExecutorId = native.shared-object` remains valid, but a Play build may resolve only cargo delivered through its admitted Play artifact or another explicitly Play-compliant delivery mechanism.
+
+The Play profile must also pass a manifest-policy receipt before signing:
+
+- `MANAGE_EXTERNAL_STORAGE` is absent unless broad file management is documented as core functionality and the required Play declaration has been approved;
+- every foreground-service type is user-beneficial, user-perceptible, terminable, accurately declared and included in the Play Console declaration;
+- the artifact exposes no self-update or externally downloaded native-code path;
+- declared permissions and exported components match the release allowlist.
+
+Policy references are inputs to the release receipt and must be revalidated for each public submission:
+
+- <https://support.google.com/googleplay/android-developer/answer/16559646>
+- <https://support.google.com/googleplay/android-developer/answer/10467955>
+
 ## Build the development release
 
 ```powershell

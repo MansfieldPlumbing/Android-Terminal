@@ -11,6 +11,10 @@ Terminal keeps six boundaries deliberately small:
 
 Features should enter through cmdlets or narrow Android capability contracts. Adding an editor, server, or TUI must not require surgery in the runspace or renderer.
 
+All authority and native crossings follow the [platform boundary contract](PLATFORM-BOUNDARY.md): documented registration and message passing at the boundary, with experimental implementation permitted inside an owned and fail-contained adapter.
+
+The executable XML grammar lives in `schemas/surface-1.xsd` and `schemas/hardpoint-1.xsd`. Prose contract notes explain semantics; the schemas and strict parsers define accepted document shape.
+
 The shipping `.csproj` contains the stable mechanism only. Optional hardpoints are admitted after compilation by `scripts/Publish-TerminalRelease.ps1`; the publisher proves that existing APK payload bytes did not change before aligning, signing, verifying, and emitting an external receipt. Roslyn is a peer capability of Terminal's PowerShell platform, not a Surface dependency.
 
 The proven ADB protocol sources now use a Terminal-owned long-running read task and logger. They have no VOM or runtime-broker dependency.

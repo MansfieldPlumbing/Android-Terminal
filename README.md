@@ -6,6 +6,8 @@ Terminal hosts PowerShell directly inside an Android application on CoreCLR. It 
 
 > **Release status:** Terminal is preparing for its first public release. The current tree is the canonical development baseline; earlier implementations and repository branches are deprecated.
 
+> **Privacy:** Terminal has no analytics, telemetry, advertising or Mansfield Plumbing user database. Read [Our Pledge](docs/OUR-PLEDGE.md).
+
 ## What works today
 
 - Persistent in-process PowerShell 7 runspace on Android ARM64
@@ -52,6 +54,8 @@ Terminal creates an app-private PowerShell home on first launch:
 
 Roslyn analysis is enabled by default. `Test-TerminalSource <path>` produces a structured audit receipt; `Assert-TerminalSource <path>` enforces the conservative compilation gate. The owner may disable enforcement in **Settings > Configuration > Roslyn analyzers**, but findings remain visible and no Android or remote authority is granted.
 
+The gate also protects the platform boundary: extension source cannot import Android/Java APIs, use JNI directly, or exchange native pointer/handle types. Android components are registered through the manifest and system managers; extensions conduct platform work through Terminal's semantic capabilities. Reviewed renderer and interop adapters remain the only basement where native handles may exist.
+
 ## Build
 
 Requirements:
@@ -81,6 +85,7 @@ The product project is `src/Terminal.Android/Terminal.Android.csproj`.
 - `docs` — architecture and workspace boundaries
 - `scripts` — repeatable developer commands
 - `templates` — canonical user-script defaults
+- `schemas` — executable Surface API and hardpoint manifest grammars
 - `hardpoints` — optional Surface XML, PowerShell behavior, and origin-scoped assets
 - `releases` — additive cargo and signing-profile recipes
 - `components/TUI-DWM` — future spatial cell-surface candidate; not included in the APK

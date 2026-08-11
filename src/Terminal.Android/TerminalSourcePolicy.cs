@@ -65,6 +65,9 @@ internal static class TerminalSourcePolicy
                     target.Contains("Marshal.GetDelegateForFunctionPointer", StringComparison.Ordinal))
                     Add(findings, "TRM003", "Error", file, invocation.GetLocation(),
                         "Dynamic code or native loading requires an explicitly reviewed runtime capability.");
+                if (IsPlatformInterop(target))
+                    Add(findings, "TRM006", "Error", file, invocation.GetLocation(),
+                        "Direct Android or Java interop bypasses Terminal's registered capability boundary.");
             }
 
             foreach (ObjectCreationExpressionSyntax creation in root.DescendantNodes().OfType<ObjectCreationExpressionSyntax>())
@@ -81,6 +84,26 @@ internal static class TerminalSourcePolicy
             foreach (SyntaxToken token in root.DescendantTokens().Where(static t => t.IsKind(SyntaxKind.UnsafeKeyword)))
                 Add(findings, "TRM005", "Error", file, token.GetLocation(),
                     "Unsafe code requires an explicitly reviewed memory capability.");
+
+            foreach (UsingDirectiveSyntax directive in root.DescendantNodes().OfType<UsingDirectiveSyntax>())
+            {
+                string imported = directive.Name?.ToString() ?? string.Empty;
+                if (IsPlatformNamespace(imported))
+                    Add(findings, "TRM006", "Error", file, directive.GetLocation(),
+                        "Android and Java APIs belong behind Terminal's registered capability boundary.");
+            }
+
+            foreach (TypeSyntax type in root.DescendantNodes().OfType<TypeSyntax>())
+            {
+                string name = type.ToString();
+                if (type is PointerTypeSyntax or FunctionPointerTypeSyntax || IsNativeHandleType(name))
+                    Add(findings, "TRM007", "Error", file, type.GetLocation(),
+                        "Native pointers and opaque platform handles are confined to reviewed basement adapters.");
+            }
+
+            foreach (FixedStatementSyntax statement in root.DescendantNodes().OfType<FixedStatementSyntax>())
+                Add(findings, "TRM007", "Error", file, statement.GetLocation(),
+                    "Pinned pointer access is confined to reviewed basement adapters.");
         }
 
         int errors = findings.Count(static f => f.Severity == "Error");
@@ -97,6 +120,27 @@ internal static class TerminalSourcePolicy
 
     private static bool EndsWithCall(string value, string name) =>
         value.Equals(name, StringComparison.Ordinal) || value.EndsWith("." + name, StringComparison.Ordinal);
+
+    private static bool IsPlatformNamespace(string value) =>
+        value.Equals("Android", StringComparison.Ordinal) ||
+        value.StartsWith("Android.", StringComparison.Ordinal) ||
+        value.Equals("Java", StringComparison.Ordinal) ||
+        value.StartsWith("Java.", StringComparison.Ordinal) ||
+        value.Equals("Javax", StringComparison.Ordinal) ||
+        value.StartsWith("Javax.", StringComparison.Ordinal) ||
+        value.Equals("Java.Interop", StringComparison.Ordinal) ||
+        value.StartsWith("Java.Interop.", StringComparison.Ordinal);
+
+    private static bool IsPlatformInterop(string value) =>
+        value.Equals("JNIEnv", StringComparison.Ordinal) ||
+        value.StartsWith("JNIEnv.", StringComparison.Ordinal) ||
+        value.Contains(".JNIEnv.", StringComparison.Ordinal) ||
+        value.Equals("JniEnvironment", StringComparison.Ordinal) ||
+        value.StartsWith("JniEnvironment.", StringComparison.Ordinal) ||
+        value.Contains(".JniEnvironment.", StringComparison.Ordinal);
+
+    private static bool IsNativeHandleType(string value) =>
+        value is "IntPtr" or "System.IntPtr" or "UIntPtr" or "System.UIntPtr" or "nint" or "nuint";
 
     private static void Add(List<TerminalPolicyFinding> findings, string id, string severity,
         string path, Location location, string message)
