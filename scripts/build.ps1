@@ -32,7 +32,17 @@ $output = Join-Path $PSScriptRoot "..\build\bin\Terminal.Android\$Configuration\
 Write-Host "Terminal build output: $([IO.Path]::GetFullPath($output))"
 
 if (-not $SkipHydration) {
-    $baseApk = Join-Path $output 'dev.mansfieldplumbing.terminal.apk'
+    $unsignedBaseApk = Join-Path $output 'dev.mansfieldplumbing.terminal.apk'
+    $sdkSignedBaseApk = Join-Path $output 'dev.mansfieldplumbing.terminal-Signed.apk'
+    $baseApk = if (Test-Path -LiteralPath $unsignedBaseApk) {
+        $unsignedBaseApk
+    } elseif (Test-Path -LiteralPath $sdkSignedBaseApk) {
+        # Release builds from the preview Android SDK emit only this installable
+        # APK. The hydrator removes old META-INF signatures before re-signing.
+        $sdkSignedBaseApk
+    } else {
+        throw "No base APK was produced under $output."
+    }
     $publisher = Join-Path $PSScriptRoot 'Publish-TerminalRelease.ps1'
     $publish = @(
         '-NoLogo', '-NoProfile', '-File', $publisher,

@@ -20,6 +20,12 @@
     <JavacSourceVersion>11</JavacSourceVersion>
     <JavacTargetVersion>11</JavacTargetVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- The Android preview SDK attempts to package portable PDBs without a
+         DestinationSubPath. Release artifacts do not ship debugger symbols. -->
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Terminal.Engine\Terminal.Engine.csproj" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.7.0-preview.2">
