@@ -54,10 +54,13 @@ public sealed class MainActivity : Activity
         root.SetFitsSystemWindows(true);
         _terminal ??= TerminalRuntime.GetTerminalEngine(this);
         _console = new NativeConsoleView(this, _terminal, _settings);
+        _console.SetHardwareKeyboard(Resources?.Configuration != null && (int)Resources.Configuration.Keyboard > 1);
         _console.ViewportChanged += (columns, rows) => _session?.SetWindowSize(columns, rows);
         _console.InputRequested += RequestTextInput;
         root.AddView(_console, new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent));
+        root.ViewTreeObserver!.GlobalLayout += (_, _) =>
+            _console?.SetImeVisible(root.RootWindowInsets?.IsVisible(WindowInsets.Type.Ime()) == true);
 
         _input = new EditText(this)
         {
@@ -120,6 +123,12 @@ public sealed class MainActivity : Activity
         if (intent?.GetBooleanExtra("open_settings", false) == true) ShowSettingsMenu();
     }
 
+    public override void OnConfigurationChanged(Android.Content.Res.Configuration newConfig)
+    {
+        base.OnConfigurationChanged(newConfig);
+        _console?.SetHardwareKeyboard((int)newConfig.Keyboard > 1);
+    }
+
     private void InstallLauncherShortcut()
     {
         if (Build.VERSION.SdkInt < BuildVersionCodes.NMr1) return;
@@ -129,8 +138,8 @@ public sealed class MainActivity : Activity
         intent.PutExtra("open_settings", true);
         var shortcut = new Android.Content.PM.ShortcutInfo.Builder(this, "settings")
             .SetShortLabel("Settings")
-            .SetLongLabel("Terminal settings")
-            .SetIcon(Android.Graphics.Drawables.Icon.CreateWithResource(this, Resource.Drawable.terminal_logo))
+            .SetLongLabel("Settings")
+            .SetIcon(Android.Graphics.Drawables.Icon.CreateWithResource(this, Resource.Drawable.shortcut_settings))
             .SetIntent(intent)
             .Build();
         manager.SetDynamicShortcuts([shortcut]);
@@ -142,7 +151,7 @@ public sealed class MainActivity : Activity
             $"Color schemes, font {_settings.FontSize:0} sp, and {_settings.Scrollback:N0} history lines",
             ShowAppearanceSettings));
         body.AddView(SettingsRow("Cursor",
-            $"{_settings.CursorStyle} · {_settings.CursorSize} dp touch target",
+            $"Pinger · {_settings.PingerSize} dp keyboard target",
             ShowCursorSettings));
         body.AddView(SettingsRow("Sessions", SessionGuardianService.IsRunning ? "Protected session running" : "Background session controls", ShowSessionSettings));
         body.AddView(SettingsRow("Permissions", AdbLoopback.IsConnected ? "Self-ADB connected" : "Optional capabilities", ShowAndroidSettings));
@@ -419,61 +428,29 @@ public sealed class MainActivity : Activity
 
     private void ShowCursorSettings() => ShowSettingsPage("Cursor", body =>
     {
-        var heading = SettingsText("Presence", 13, "#B6BBC7");
-        heading.SetPadding(SettingsDp(18), SettingsDp(14), SettingsDp(18), SettingsDp(6));
-        body.AddView(heading);
-
-        var markers = new List<(string Style, TextView Marker)>();
-        foreach (var choice in new[]
-        {
-            (Style: "Beam", Caption: "Steady and precise", Glyph: "│"),
-            (Style: "Pulse", Caption: "A softly breathing orb", Glyph: "●"),
-            (Style: "Beacon", Caption: "Concentric arrival rings", Glyph: "◎"),
-            (Style: "Portal", Caption: "A layered, orbiting destination", Glyph: "◉")
-        })
-        {
-            var marker = SettingsText(_settings.CursorStyle == choice.Style ? "✓" : "", 18, "#9CCBFF");
-            marker.Gravity = GravityFlags.Center;
-            markers.Add((choice.Style, marker));
-            var preview = new LinearLayout(this) { Orientation = Orientation.Horizontal };
-            preview.SetGravity(GravityFlags.Center);
-            var glyph = SettingsText(choice.Glyph, 25, "#EAF5FF");
-            glyph.Gravity = GravityFlags.Center;
-            preview.AddView(glyph, new LinearLayout.LayoutParams(SettingsDp(46), SettingsDp(40)));
-            preview.AddView(marker, new LinearLayout.LayoutParams(SettingsDp(28), SettingsDp(40)));
-            body.AddView(SettingsInlineRow(choice.Style, choice.Caption, preview, () =>
-            {
-                _settings.CursorStyle = choice.Style;
-                ApplySettings();
-                SaveSettings();
-                foreach ((string style, TextView view) in markers)
-                    view.Text = style == choice.Style ? "✓" : "";
-            }));
-        }
-
-        var sizeValue = SettingsText($"Size & touch target  ·  {_settings.CursorSize} dp", 14, "#B6BBC7");
+        var sizeValue = SettingsText($"Pinger diameter & touch target  ·  {_settings.PingerSize} dp", 14, "#B6BBC7");
         sizeValue.SetPadding(SettingsDp(18), SettingsDp(18), SettingsDp(18), 0);
         body.AddView(sizeValue);
-        var size = new SeekBar(this) { Max = 20, Progress = Math.Clamp((_settings.CursorSize - 32) / 4, 0, 20) };
+        var size = new SeekBar(this) { Max = 20, Progress = Math.Clamp((_settings.PingerSize - 32) / 4, 0, 20) };
         size.ProgressChanged += (_, e) =>
         {
             if (!e.FromUser) return;
-            _settings.CursorSize = 32 + e.Progress * 4;
-            sizeValue.Text = $"Size & touch target  ·  {_settings.CursorSize} dp";
+            _settings.PingerSize = 32 + e.Progress * 4;
+            sizeValue.Text = $"Pinger diameter & touch target  ·  {_settings.PingerSize} dp";
             ApplySettings();
             SaveSettings();
         };
         body.AddView(size);
 
-        var cadenceValue = SettingsText($"Cadence  ·  {_settings.CursorCadence / 1000f:0.0} seconds", 14, "#B6BBC7");
+        var cadenceValue = SettingsText($"Ping interval  ·  {_settings.PingerInterval / 1000f:0.0} seconds", 14, "#B6BBC7");
         cadenceValue.SetPadding(SettingsDp(18), SettingsDp(14), SettingsDp(18), 0);
         body.AddView(cadenceValue);
-        var cadence = new SeekBar(this) { Max = 28, Progress = Math.Clamp(_settings.CursorCadence / 100 - 4, 0, 28) };
+        var cadence = new SeekBar(this) { Max = 46, Progress = Math.Clamp(_settings.PingerInterval / 100 - 4, 0, 46) };
         cadence.ProgressChanged += (_, e) =>
         {
             if (!e.FromUser) return;
-            _settings.CursorCadence = (e.Progress + 4) * 100;
-            cadenceValue.Text = $"Cadence  ·  {_settings.CursorCadence / 1000f:0.0} seconds";
+            _settings.PingerInterval = (e.Progress + 4) * 100;
+            cadenceValue.Text = $"Ping interval  ·  {_settings.PingerInterval / 1000f:0.0} seconds";
             ApplySettings();
             SaveSettings();
         };
@@ -749,7 +726,7 @@ public sealed class MainActivity : Activity
         _console?.SetFontSize(_settings.FontSize);
         _console?.SetScrollback(_settings.Scrollback);
         _console?.ApplyColors(_settings.Background, _settings.Foreground);
-        _console?.SetCursorAppearance(_settings.CursorStyle, _settings.CursorSize, _settings.CursorCadence);
+        _console?.SetPinger(_settings.PingerSize, _settings.PingerInterval);
     }
 
     private void SaveSettings()
@@ -764,12 +741,11 @@ $NativeConsoleSettings = @{
     HintForeground = '{{Q(_settings.HintForeground)}}'
     FontSize = {{_settings.FontSize.ToString(System.Globalization.CultureInfo.InvariantCulture)}}
     Scrollback = {{_settings.Scrollback}}
-    CursorStyle = '{{Q(_settings.CursorStyle)}}'
-    CursorSize = {{_settings.CursorSize}}
-    CursorCadence = {{_settings.CursorCadence}}
+    PingerSize = {{_settings.PingerSize}}
+    PingerInterval = {{_settings.PingerInterval}}
     Prompt = '{{Q(_settings.Prompt)}}'
     AllowDragons = ${{_settings.AllowDragons.ToString().ToLowerInvariant()}}
-    SettingsVersion = 5
+    SettingsVersion = 8
 }
 """);
     }
@@ -812,13 +788,20 @@ $NativeConsoleSettings = @{
             }
             if (!existing.Contains("SettingsVersion") && existing.Contains("FontSize = 30"))
                 System.IO.File.WriteAllText(path, existing.Replace("FontSize = 30", "FontSize = 14") + "\n$NativeConsoleSettings.SettingsVersion = 4\n");
-            if (!existing.Contains("CursorStyle"))
+            if (!existing.Contains("PingerSize"))
             {
                 existing = System.IO.File.ReadAllText(path)
-                    .Replace("SettingsVersion = 4", "SettingsVersion = 5");
-                existing += "\n$NativeConsoleSettings.CursorStyle = 'Portal'\n" +
-                            "$NativeConsoleSettings.CursorSize = 64\n" +
-                            "$NativeConsoleSettings.CursorCadence = 1400\n";
+                    .Replace("SettingsVersion = 4", "SettingsVersion = 8")
+                    .Replace("SettingsVersion = 5", "SettingsVersion = 8")
+                    .Replace("SettingsVersion = 6", "SettingsVersion = 8");
+                existing += "\n$NativeConsoleSettings.PingerSize = 112\n" +
+                            "$NativeConsoleSettings.PingerInterval = 2000\n";
+                System.IO.File.WriteAllText(path, existing);
+            }
+            else if (existing.Contains("SettingsVersion = 7") && existing.Contains("PingerSize = 80"))
+            {
+                existing = existing.Replace("PingerSize = 80", "PingerSize = 112")
+                    .Replace("SettingsVersion = 7", "SettingsVersion = 8");
                 System.IO.File.WriteAllText(path, existing);
             }
             return path;

@@ -8,10 +8,9 @@ $NativeConsoleSettings = @{
     HintForeground = '#808890'
     FontSize = 14
     Scrollback = 2000
-    CursorStyle = 'Portal'
-    CursorSize = 64
-    CursorCadence = 1400
+    PingerSize = 112
+    PingerInterval = 2000
     Prompt = 'PS {path}> '
     AllowDragons = $false
-    SettingsVersion = 5
+    SettingsVersion = 8
 }

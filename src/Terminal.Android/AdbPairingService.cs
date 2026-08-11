@@ -92,7 +92,8 @@ public sealed class AdbPairingService : Service
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         var builder = new Notification.Builder(this, ChannelId)
-            .SetSmallIcon(Resource.Drawable.terminal_logo)
+            .SetSmallIcon(Resource.Drawable.notification_terminal)
+            .SetColor(Android.Graphics.Color.ParseColor("#012456").ToArgb())
             .SetContentTitle("Terminal · self-ADB")
             .SetContentText(_text)
             .SetContentIntent(openPending)

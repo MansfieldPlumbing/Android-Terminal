@@ -28,9 +28,10 @@ internal sealed class NativeConsoleView : View
     private float _fontSize;
     private uint _defaultForeground;
     private uint _defaultBackground;
-    private string _cursorStyle;
-    private float _cursorSizeDp;
-    private int _cursorCadenceMs;
+    private float _pingerSizeDp;
+    private int _pingerIntervalMs;
+    private bool _imeVisible;
+    private bool _hardwareKeyboard;
     private bool _attached;
     private bool _presenterActive;
     private bool _subscribed;
@@ -46,9 +47,8 @@ internal sealed class NativeConsoleView : View
         _scaledDensity = context.Resources?.DisplayMetrics?.ScaledDensity ?? 1f;
         _density = context.Resources?.DisplayMetrics?.Density ?? 1f;
         _fontSize = settings.FontSize;
-        _cursorStyle = settings.CursorStyle;
-        _cursorSizeDp = settings.CursorSize;
-        _cursorCadenceMs = settings.CursorCadence;
+        _pingerSizeDp = settings.PingerSize;
+        _pingerIntervalMs = settings.PingerInterval;
         _paint.SetTypeface(Typeface.Monospace);
         _selectionPaint.Color = Color.Argb(92, 90, 170, 255);
         _cursorPaint.Color = Color.ParseColor("#F5F5F5");
@@ -188,68 +188,46 @@ internal sealed class NativeConsoleView : View
         float top = PaddingTop + cursor.Row * _cellHeight;
         float centerX = left + _cellWidth * .5f;
         float centerY = top + _cellHeight * .5f;
-        float radius = _cursorSizeDp * _density * .5f;
-        float phase = (SystemClock.UptimeMillis() % _cursorCadenceMs) / (float)_cursorCadenceMs;
+        float radius = _pingerSizeDp * _density * .5f;
+        bool keyboardActive = _imeVisible || _hardwareKeyboard;
 
-        switch (_cursorStyle)
+        if (!keyboardActive)
         {
-            case "Pulse":
-                DrawPulse(canvas, centerX, centerY, radius, phase);
-                break;
-            case "Beacon":
-                DrawBeacon(canvas, centerX, centerY, radius, phase);
-                break;
-            case "Portal":
-                DrawPortal(canvas, centerX, centerY, radius, phase);
-                break;
+            long elapsed = SystemClock.UptimeMillis() % _pingerIntervalMs;
+            long duration = Math.Min(520, _pingerIntervalMs / 2);
+            bool pinging = elapsed < duration;
+            DrawPinger(canvas, centerX, centerY, radius,
+                pinging ? elapsed / (float)duration : 1f, pinging);
+            if (_presenterActive)
+            {
+                if (pinging) PostInvalidateOnAnimation();
+                else PostInvalidateDelayed(Math.Max(16, _pingerIntervalMs - elapsed));
+            }
         }
 
-        _cursorPaint.Alpha = 255;
-        canvas.DrawLine(left + 1, top + 2, left + 1, top + _cellHeight - 2, _cursorPaint);
-        if (_cursorStyle != "Beam" && _presenterActive) PostInvalidateOnAnimation();
+        if (keyboardActive) DrawKeyboardCursor(canvas, left, top);
     }
 
-    private void DrawPulse(Canvas canvas, float x, float y, float radius, float phase)
+    private void DrawKeyboardCursor(Canvas canvas, float left, float top)
     {
-        float breath = .72f + .28f * MathF.Sin(phase * MathF.Tau);
-        FillCursorCircle(canvas, x, y, radius * breath, 30);
-        FillCursorCircle(canvas, x, y, radius * .22f, 105);
+        _cursorPaint.SetStyle(Paint.Style.Fill);
+        _cursorPaint.Alpha = 42;
+        canvas.DrawRect(left, top + 1, left + _cellWidth, top + _cellHeight - 1, _cursorPaint);
+        _cursorPaint.SetStyle(Paint.Style.Stroke);
+        _cursorPaint.StrokeWidth = Math.Max(1.5f * _density, 2f);
+        _cursorPaint.Alpha = 230;
+        canvas.DrawRect(left + 1, top + 1, left + _cellWidth - 1, top + _cellHeight - 1, _cursorPaint);
     }
 
-    private void DrawBeacon(Canvas canvas, float x, float y, float radius, float phase)
+    private void DrawPinger(Canvas canvas, float x, float y, float radius, float phase, bool pinging)
     {
-        FillCursorCircle(canvas, x, y, radius * .18f, 95);
-        DrawCursorRing(canvas, x, y, radius, phase);
-        DrawCursorRing(canvas, x, y, radius, (phase + .5f) % 1f);
-    }
-
-    private void DrawPortal(Canvas canvas, float x, float y, float radius, float phase)
-    {
-        float breath = .82f + .12f * MathF.Sin(phase * MathF.Tau);
-        FillCursorCircle(canvas, x, y, radius * breath, 20);
-        FillCursorCircle(canvas, x, y, radius * .28f, 70);
-        for (int index = 0; index < 3; index++)
-        {
-            float ringPhase = (phase + index / 3f) % 1f;
-            float ringRadius = radius * (.34f + .56f * ringPhase);
-            _cursorAuraPaint.SetStyle(Paint.Style.Stroke);
-            _cursorAuraPaint.StrokeWidth = Math.Max(1.5f * _density, radius * .035f);
-            _cursorAuraPaint.Alpha = (int)(58 * (1f - ringPhase));
-            canvas.DrawCircle(x, y, ringRadius, _cursorAuraPaint);
-        }
-
-        float orbit = phase * MathF.Tau;
-        float orbitRadius = radius * .58f;
-        FillCursorCircle(canvas, x + MathF.Cos(orbit) * orbitRadius,
-            y + MathF.Sin(orbit) * orbitRadius, Math.Max(1.8f * _density, radius * .045f), 120);
-    }
-
-    private void DrawCursorRing(Canvas canvas, float x, float y, float radius, float phase)
-    {
+        FillCursorCircle(canvas, x, y, radius * .09f, pinging ? 92 : 48);
+        if (!pinging) return;
+        float fade = 1f - phase;
         _cursorAuraPaint.SetStyle(Paint.Style.Stroke);
-        _cursorAuraPaint.StrokeWidth = Math.Max(1.5f * _density, radius * .04f);
-        _cursorAuraPaint.Alpha = (int)(100 * (1f - phase));
-        canvas.DrawCircle(x, y, radius * (.2f + .8f * phase), _cursorAuraPaint);
+        _cursorAuraPaint.StrokeWidth = Math.Max(1.25f * _density, radius * (.025f + .025f * fade));
+        _cursorAuraPaint.Alpha = (int)(105 * fade * fade);
+        canvas.DrawCircle(x, y, radius * (.12f + .88f * phase), _cursorAuraPaint);
     }
 
     private void FillCursorCircle(Canvas canvas, float x, float y, float radius, int alpha)
@@ -318,7 +296,7 @@ internal sealed class NativeConsoleView : View
         if (!cursor.Visible) return false;
         float cursorX = PaddingLeft + cursor.Column * _cellWidth + _cellWidth * .5f;
         float cursorY = PaddingTop + cursor.Row * _cellHeight + _cellHeight * .5f;
-        float radius = _cursorSizeDp * _density * .5f;
+        float radius = _pingerSizeDp * _density * .5f;
         float dx = x - cursorX;
         float dy = y - cursorY;
         return dx * dx + dy * dy <= radius * radius;
@@ -334,12 +312,31 @@ internal sealed class NativeConsoleView : View
 
     public void SetScrollback(int lines) => _engine.MaxScrollback = Math.Clamp(lines, 100, 20000);
 
-    public void SetCursorAppearance(string style, float sizeDp, int cadenceMs)
+    public void SetPinger(float sizeDp, int intervalMs)
     {
-        _cursorStyle = style is "Beam" or "Pulse" or "Beacon" or "Portal" ? style : "Portal";
-        _cursorSizeDp = Math.Clamp(sizeDp, 32f, 112f);
-        _cursorCadenceMs = Math.Clamp(cadenceMs, 400, 3200);
+        _pingerSizeDp = Math.Clamp(sizeDp, 32f, 112f);
+        _pingerIntervalMs = Math.Clamp(intervalMs, 400, 5000);
         Invalidate();
+    }
+
+    public void SetHardwareKeyboard(bool present)
+    {
+        if (_hardwareKeyboard == present) return;
+        _hardwareKeyboard = present;
+        Invalidate();
+    }
+
+    public void SetImeVisible(bool visible)
+    {
+        if (_imeVisible == visible) return;
+        _imeVisible = visible;
+        Invalidate();
+    }
+
+    public override WindowInsets? OnApplyWindowInsets(WindowInsets? insets)
+    {
+        SetImeVisible(insets?.IsVisible(WindowInsets.Type.Ime()) == true);
+        return base.OnApplyWindowInsets(insets);
     }
 
     public void ApplyColors(string background, string foreground)

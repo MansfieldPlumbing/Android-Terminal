@@ -325,9 +325,10 @@ $global:UI = Show-TerminalHardpoint -Id $Id
                 Prompt = Read(value, "Prompt", "PS> "),
                 FontSize = ReadInt(value, "FontSize", 14, 10, 32),
                 Scrollback = ReadInt(value, "Scrollback", 2000, 100, 20000),
-                CursorStyle = ReadCursorStyle(value),
-                CursorSize = ReadInt(value, "CursorSize", 64, 32, 112),
-                CursorCadence = ReadInt(value, "CursorCadence", 1400, 400, 3200),
+                PingerSize = ReadInt(value, "PingerSize",
+                    ReadInt(value, "CursorSize", 112, 32, 112), 32, 112),
+                PingerInterval = ReadInt(value, "PingerInterval",
+                    ReadInt(value, "CursorCadence", 2000, 400, 5000), 400, 5000),
                 AllowDragons = ReadBool(value, "AllowDragons", false)
             };
         }
@@ -346,12 +347,6 @@ $global:UI = Show-TerminalHardpoint -Id $Id
     private static int ReadInt(PSObject value, string name, int fallback, int min, int max)
         => int.TryParse(value.Properties[name]?.Value?.ToString(), out int result)
             ? Math.Clamp(result, min, max) : fallback;
-
-    private static string ReadCursorStyle(PSObject value)
-    {
-        string candidate = Read(value, "CursorStyle", "Portal");
-        return candidate is "Beam" or "Pulse" or "Beacon" or "Portal" ? candidate : "Portal";
-    }
 
     private static bool ReadBool(PSObject value, string name, bool fallback)
         => bool.TryParse(value.Properties[name]?.Value?.ToString(), out bool result) ? result : fallback;
@@ -415,9 +410,8 @@ internal sealed class ConsoleSettings
     public string HintForeground { get; set; } = "#808890";
     public float FontSize { get; set; } = 14;
     public int Scrollback { get; set; } = 2000;
-    public string CursorStyle { get; set; } = "Portal";
-    public int CursorSize { get; set; } = 64;
-    public int CursorCadence { get; set; } = 1400;
+    public int PingerSize { get; set; } = 112;
+    public int PingerInterval { get; set; } = 2000;
     public string Prompt { get; set; } = "PS> ";
     public bool AllowDragons { get; set; }
 }

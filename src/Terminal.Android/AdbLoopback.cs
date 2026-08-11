@@ -159,7 +159,8 @@ public static class AdbLoopback
         var pending = PendingIntent.GetActivity(activity, PairingNotificationId, open,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
         var notification = new Notification.Builder(activity, PairingChannelId)
-            .SetSmallIcon(Resource.Drawable.terminal_logo)
+            .SetSmallIcon(Resource.Drawable.notification_terminal)
+            .SetColor(Android.Graphics.Color.ParseColor("#012456").ToArgb())
             .SetContentTitle("Enter wireless-debugging code")
             .SetContentText("Tap to finish self-ADB pairing in Terminal")
             .SetContentIntent(pending)
