@@ -29,6 +29,7 @@ public sealed class MainActivity : Activity
     private string? _settingsSection;
     private bool _settingsTransitioning;
     private bool _settingsStandalone;
+    private int _commandSubmissionActive;
     private readonly List<SettingsPage> _settingsPages = [];
     private ConsoleSettings _settings = new();
     private string _settingsPath = string.Empty;
@@ -812,18 +813,28 @@ $NativeConsoleSettings = @{
     {
         if (e.ActionId != ImeAction.Send && e.Event?.KeyCode != Keycode.Enter) return;
         e.Handled = true;
-        string command = _input?.Text ?? string.Empty;
-        if (_input != null) _input.Text = string.Empty;
-        if (string.IsNullOrWhiteSpace(command))
+
+        // Physical keyboards and scrcpy can report both halves of the same Enter
+        // key press. Only key-down submits, and never overlap command submissions.
+        if (e.Event is { Action: not KeyEventActions.Down }) return;
+        if (Interlocked.Exchange(ref _commandSubmissionActive, 1) != 0) return;
+
+        try
         {
-            _terminal?.Feed("\r\n");
-            if (_session != null) _terminal?.Feed(await _session.GetPromptAsync());
-            return;
+            string command = _input?.Text ?? string.Empty;
+            if (_input != null) _input.Text = string.Empty;
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                _terminal?.Feed("\r\n");
+                if (_session != null) _terminal?.Feed(await _session.GetPromptAsync());
+                return;
+            }
+            if (_session == null) { _terminal?.Feed("Runspace is still starting.\r\n"); return; }
+            _terminal?.Feed(_session.Highlight(command) + "\r\n");
+            await _session.ExecuteAsync(command);
+            _terminal?.Feed(await _session.GetPromptAsync());
         }
-        if (_session == null) { _terminal?.Feed("Runspace is still starting.\r\n"); return; }
-        _terminal?.Feed(_session.Highlight(command) + "\r\n");
-        await _session.ExecuteAsync(command);
-        _terminal?.Feed(await _session.GetPromptAsync());
+        finally { Volatile.Write(ref _commandSubmissionActive, 0); }
     }
 
     private string SeedSettings()

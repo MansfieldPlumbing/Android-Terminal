@@ -8,6 +8,8 @@ namespace NativePwshConsole;
 
 internal sealed class NativeConsoleView : View
 {
+    private const int KeyboardCursorVisibleMs = 600;
+    private const int KeyboardCursorHiddenMs = 500;
     private readonly TerminalEngine _engine;
     private readonly Paint _paint = new(PaintFlags.AntiAlias);
     private readonly Paint _surfacePaint = new();
@@ -37,6 +39,7 @@ internal sealed class NativeConsoleView : View
     private bool _subscribed;
     private TerminalSnapshot? _snapshot;
     private int _snapshotDirty = 1;
+    private long _keyboardCursorBlinkEpoch;
 
     public event Action<int, int>? ViewportChanged;
     public event Action? InputRequested;
@@ -53,6 +56,7 @@ internal sealed class NativeConsoleView : View
         _selectionPaint.Color = Color.Argb(92, 90, 170, 255);
         _cursorPaint.Color = Color.ParseColor("#F5F5F5");
         _cursorPaint.StrokeWidth = Math.Max(2, context.Resources?.DisplayMetrics?.Density * 1.5f ?? 2);
+        _keyboardCursorBlinkEpoch = SystemClock.UptimeMillis();
         ApplyMetrics();
         ApplyColors(settings.Background, settings.Foreground);
         SetPadding(12, 4, 12, 4);
@@ -78,6 +82,7 @@ internal sealed class NativeConsoleView : View
 
     private void OnEngineChanged()
     {
+        _keyboardCursorBlinkEpoch = SystemClock.UptimeMillis();
         Interlocked.Exchange(ref _snapshotDirty, 1);
         PostInvalidate();
     }
@@ -205,18 +210,35 @@ internal sealed class NativeConsoleView : View
             }
         }
 
-        if (keyboardActive) DrawKeyboardCursor(canvas, left, top);
+        if (keyboardActive)
+        {
+            long period = KeyboardCursorVisibleMs + KeyboardCursorHiddenMs;
+            long elapsed = (SystemClock.UptimeMillis() - _keyboardCursorBlinkEpoch) % period;
+            if (elapsed < KeyboardCursorVisibleMs)
+                DrawKeyboardCursor(canvas, snapshot, cursor, left, top);
+            if (_presenterActive)
+            {
+                long next = elapsed < KeyboardCursorVisibleMs
+                    ? KeyboardCursorVisibleMs - elapsed
+                    : period - elapsed;
+                PostInvalidateDelayed(Math.Max(16, next));
+            }
+        }
     }
 
-    private void DrawKeyboardCursor(Canvas canvas, float left, float top)
+    private void DrawKeyboardCursor(Canvas canvas, TerminalSnapshot snapshot, TerminalCursor cursor, float left, float top)
     {
         _cursorPaint.SetStyle(Paint.Style.Fill);
-        _cursorPaint.Alpha = 42;
+        _cursorPaint.Alpha = 255;
         canvas.DrawRect(left, top + 1, left + _cellWidth, top + _cellHeight - 1, _cursorPaint);
-        _cursorPaint.SetStyle(Paint.Style.Stroke);
-        _cursorPaint.StrokeWidth = Math.Max(1.5f * _density, 2f);
-        _cursorPaint.Alpha = 230;
-        canvas.DrawRect(left + 1, top + 1, left + _cellWidth - 1, top + _cellHeight - 1, _cursorPaint);
+
+        TerminalCell cell = snapshot.Lines[cursor.Row][cursor.Column];
+        if (cell.IsContinuation || string.IsNullOrWhiteSpace(cell.Grapheme)) return;
+        ConfigureGlyphPaint(cell);
+        _paint.Color = new Color(unchecked((int)_defaultBackground));
+        _paint.Alpha = 255;
+        canvas.DrawText(cell.Grapheme, left,
+            PaddingTop + cursor.Row * _cellHeight + _baselineOffset, _paint);
     }
 
     private void DrawPinger(Canvas canvas, float x, float y, float radius, float phase, bool pinging)
@@ -323,6 +345,7 @@ internal sealed class NativeConsoleView : View
     {
         if (_hardwareKeyboard == present) return;
         _hardwareKeyboard = present;
+        if (present) _keyboardCursorBlinkEpoch = SystemClock.UptimeMillis();
         Invalidate();
     }
 
@@ -330,6 +353,7 @@ internal sealed class NativeConsoleView : View
     {
         if (_imeVisible == visible) return;
         _imeVisible = visible;
+        if (visible) _keyboardCursorBlinkEpoch = SystemClock.UptimeMillis();
         Invalidate();
     }
 
