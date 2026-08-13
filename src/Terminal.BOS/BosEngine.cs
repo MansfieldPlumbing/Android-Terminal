@@ -1,17 +1,17 @@
-namespace Terminal.Bos;
+namespace Terminal.BOS;
 
 public abstract record InvocationOutcome;
 
 public sealed record InlineResult(object? Value) : InvocationOutcome;
 
-public sealed record BosError(string Code, string Message);
+public sealed record BOSError(string Code, string Message);
 
-public sealed class BosEngine
+public sealed class BOSEngine
 {
     public const string Version = "0.1";
     private readonly TerminalStatusCatalog _status;
 
-    public BosEngine(TerminalStatusCatalog status) =>
+    public BOSEngine(TerminalStatusCatalog status) =>
         _status = status ?? throw new ArgumentNullException(nameof(status));
 
     public InvocationOutcome Invoke(string commandLine)
@@ -24,7 +24,7 @@ public sealed class BosEngine
         {
             "VER" when words.Length == 1 => new InlineResult($"BOS {Version}"),
             "STATUS" => Status(words),
-            _ => new InlineResult(new BosError("BOS001", $"Unknown BOS command '{words[0]}'.")),
+            _ => new InlineResult(new BOSError("BOS001", $"Unknown BOS command '{words[0]}'.")),
         };
     }
 
@@ -33,14 +33,14 @@ public sealed class BosEngine
         TerminalOperationalStatus snapshot = _status.Capture();
         if (words.Length == 1) return new InlineResult(snapshot);
         if (words.Length != 2)
-            return new InlineResult(new BosError("BOS002", "Usage: STATUS [BOS|REMEDY|SESSIONS]"));
+            return new InlineResult(new BOSError("BOS002", "Usage: STATUS [BOS|REMEDY|SESSIONS]"));
 
         return words[1].ToUpperInvariant() switch
         {
-            "BOS" => new InlineResult(snapshot.Bos),
+            "BOS" => new InlineResult(snapshot.BOS),
             "REMEDY" => new InlineResult(snapshot.Remedy),
             "SESSIONS" or "ROUTER" => new InlineResult(snapshot.Router),
-            _ => new InlineResult(new BosError("BOS002", "Usage: STATUS [BOS|REMEDY|SESSIONS]")),
+            _ => new InlineResult(new BOSError("BOS002", "Usage: STATUS [BOS|REMEDY|SESSIONS]")),
         };
     }
 }

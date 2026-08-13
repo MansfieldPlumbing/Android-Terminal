@@ -1,4 +1,4 @@
-namespace Terminal.Engine;
+namespace Terminal.VT;
 
 [Flags]
 public enum TerminalAttributes : byte

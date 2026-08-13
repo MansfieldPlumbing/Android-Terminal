@@ -5,22 +5,22 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$engine = Join-Path $repository 'src\Terminal.Engine'
-$bos = Join-Path $repository 'src\Terminal.Bos'
+$engine = Join-Path $repository 'src\Terminal.VT'
+$bos = Join-Path $repository 'src\Terminal.BOS'
 $surface = Join-Path $repository 'src\Terminal.Android\Surface'
 $failures = [Collections.Generic.List[string]]::new()
 
 foreach ($file in Get-ChildItem -LiteralPath $engine -Filter '*.cs' -Recurse) {
     $matches = Select-String -LiteralPath $file.FullName -Pattern '^\s*using\s+(Android|Java|Javax)(\.|;)' -CaseSensitive
     foreach ($match in $matches) {
-        $failures.Add("$($file.FullName):$($match.LineNumber): Terminal.Engine cannot reference Android or Java.")
+        $failures.Add("$($file.FullName):$($match.LineNumber): Terminal.VT cannot reference Android or Java.")
     }
 }
 
 foreach ($file in Get-ChildItem -LiteralPath $bos -Filter '*.cs' -Recurse) {
     $matches = Select-String -LiteralPath $file.FullName -Pattern '^\s*using\s+(Android|Java|Javax|System\.Management\.Automation)(\.|;)' -CaseSensitive
     foreach ($match in $matches) {
-        $failures.Add("$($file.FullName):$($match.LineNumber): Terminal.Bos cannot reference Android, Java, or PowerShell.")
+        $failures.Add("$($file.FullName):$($match.LineNumber): Terminal.BOS cannot reference Android, Java, or PowerShell.")
     }
 }
 

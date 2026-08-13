@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="src/Terminal.Engine/Terminal.Engine.csproj" />
-  <Project Path="src/Terminal.Bos/Terminal.Bos.csproj" />
+  <Project Path="src/Terminal.VT/Terminal.VT.csproj" />
+  <Project Path="src/Terminal.BOS/Terminal.BOS.csproj" />
   <Project Path="src/Terminal.Android/Terminal.Android.csproj" />
-  <Project Path="tests/Terminal.Engine.Tests/Terminal.Engine.Tests.csproj" />
-  <Project Path="tests/Terminal.Bos.Tests/Terminal.Bos.Tests.csproj" />
+  <Project Path="tests/Terminal.VT.Tests/Terminal.VT.Tests.csproj" />
+  <Project Path="tests/Terminal.BOS.Tests/Terminal.BOS.Tests.csproj" />
 </Solution>

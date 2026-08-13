@@ -3,7 +3,7 @@ using Android.App;
 using System.Management.Automation;
 using NativePwshConsole.Surface;
 using NativePwshConsole.Hardpoints;
-using Terminal.Engine;
+using Terminal.VT;
 
 namespace NativePwshConsole;
 
@@ -13,7 +13,7 @@ internal static class TerminalRuntime
 {
     private static readonly object Gate = new();
     private static PowerShellSession? _session;
-    private static TerminalEngine? _terminal;
+    private static TerminalVT? _terminal;
     private static SurfaceHost? _surfaces;
     private static HardpointCatalog? _hardpoints;
 
@@ -26,7 +26,7 @@ internal static class TerminalRuntime
             string system = SeedSystemScripts(context, home);
             _hardpoints = HardpointCatalog.HydrateAndLoad(context, home);
             _session = new PowerShellSession(home, system);
-            _terminal = new TerminalEngine();
+            _terminal = new TerminalVT();
             _session.Output += _terminal.Feed;
             foreach (string diagnostic in _session.StartupDiagnostics)
                 _terminal.Feed($"\x1b[91m{diagnostic}\x1b[0m\r\n");
@@ -37,7 +37,7 @@ internal static class TerminalRuntime
         }
     }
 
-    public static TerminalEngine GetTerminalEngine(Context context)
+    public static TerminalVT GetTerminalVT(Context context)
     {
         lock (Gate)
         {

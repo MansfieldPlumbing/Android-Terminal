@@ -6,6 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Terminal.Engine\Terminal.Engine.csproj" />
+    <ProjectReference Include="..\..\src\Terminal.VT\Terminal.VT.csproj" />
   </ItemGroup>
 </Project>

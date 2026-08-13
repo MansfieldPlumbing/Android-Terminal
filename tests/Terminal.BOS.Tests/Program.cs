@@ -1,4 +1,4 @@
-using Terminal.Bos;
+using Terminal.BOS;
 
 var tests = new (string Name, Action Body)[]
 {
@@ -14,14 +14,14 @@ foreach ((string name, Action body) in tests)
     try { body(); Console.WriteLine($"PASS  {name}"); }
     catch (Exception error) { failures++; Console.Error.WriteLine($"FAIL  {name}: {error.Message}"); }
 }
-Console.WriteLine($"Terminal.Bos contract: {tests.Length - failures}/{tests.Length} passed");
+Console.WriteLine($"Terminal.BOS contract: {tests.Length - failures}/{tests.Length} passed");
 return failures == 0 ? 0 : 1;
 
 static void ColdStatusIsHonest()
 {
-    var catalog = new TerminalStatusCatalog(BosEngine.Version);
+    var catalog = new TerminalStatusCatalog(BOSEngine.Version);
     TerminalOperationalStatus status = catalog.Capture();
-    Equal(OperationalState.Starting, status.Bos.State);
+    Equal(OperationalState.Starting, status.BOS.State);
     Equal(OperationalState.Absent, status.Remedy.State);
     Equal(OperationalState.Absent, status.Router.State);
     Equal(ConsoleBackend.None, status.Router.Backend);
@@ -30,19 +30,19 @@ static void ColdStatusIsHonest()
 
 static void StatusProjectionsShareModel()
 {
-    var catalog = new TerminalStatusCatalog(BosEngine.Version);
-    catalog.PublishBos(new BosStatus(OperationalState.Ready, BosEngine.Version));
-    var engine = new BosEngine(catalog);
+    var catalog = new TerminalStatusCatalog(BOSEngine.Version);
+    catalog.PublishBOS(new BOSStatus(OperationalState.Ready, BOSEngine.Version));
+    var engine = new BOSEngine(catalog);
     var all = Value<TerminalOperationalStatus>(engine.Invoke("status"));
-    var bos = Value<BosStatus>(engine.Invoke("STATUS BOS"));
+    var bos = Value<BOSStatus>(engine.Invoke("STATUS BOS"));
     var remedy = Value<WorkerSupervisorStatus>(engine.Invoke("status remedy"));
-    Equal(all.Bos, bos);
+    Equal(all.BOS, bos);
     Equal(all.Remedy, remedy);
 }
 
 static void PublishedLifecycleIsLayered()
 {
-    var catalog = new TerminalStatusCatalog(BosEngine.Version);
+    var catalog = new TerminalStatusCatalog(BOSEngine.Version);
     Guid session = Guid.NewGuid();
     catalog.PublishWorkerSupervisor(new WorkerSupervisorStatus(
         OperationalState.Ready, 41, ReadyReceived: true));
@@ -58,10 +58,10 @@ static void PublishedLifecycleIsLayered()
 
 static void VersionAndUnknownCommand()
 {
-    var engine = new BosEngine(new TerminalStatusCatalog(BosEngine.Version));
+    var engine = new BOSEngine(new TerminalStatusCatalog(BOSEngine.Version));
     Equal("BOS 0.1", Value<string>(engine.Invoke("ver")));
-    Equal("BOS001", Value<BosError>(engine.Invoke("dance")).Code);
-    Equal("BOS002", Value<BosError>(engine.Invoke("status nonsense")).Code);
+    Equal("BOS001", Value<BOSError>(engine.Invoke("dance")).Code);
+    Equal("BOS002", Value<BOSError>(engine.Invoke("status nonsense")).Code);
 }
 
 static T Value<T>(InvocationOutcome outcome) =>

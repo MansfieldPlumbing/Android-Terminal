@@ -12,8 +12,8 @@ param(
 )
 
 $project = Join-Path $PSScriptRoot '..\src\Terminal.Android\Terminal.Android.csproj'
-$engineTests = Join-Path $PSScriptRoot '..\tests\Terminal.Engine.Tests\Terminal.Engine.Tests.csproj'
-$bosTests = Join-Path $PSScriptRoot '..\tests\Terminal.Bos.Tests\Terminal.Bos.Tests.csproj'
+$engineTests = Join-Path $PSScriptRoot '..\tests\Terminal.VT.Tests\Terminal.VT.Tests.csproj'
+$bosTests = Join-Path $PSScriptRoot '..\tests\Terminal.BOS.Tests\Terminal.BOS.Tests.csproj'
 $packagedSettings = Join-Path $PSScriptRoot '..\src\Terminal.Android\Assets\settings.ps1'
 $spareSettings = Join-Path $PSScriptRoot '..\templates\settings.default.ps1'
 if ((Get-FileHash $packagedSettings).Hash -ne (Get-FileHash $spareSettings).Hash) {
