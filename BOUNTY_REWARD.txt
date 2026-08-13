@@ -1,0 +1,644 @@
+Path                                                              LineNumber Line
+----                                                              ---------- ----
+C:\dev\Terminal\src\Terminal.Android\AdbLog.cs                             1 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\AdbLoopback.cs                       11 using Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                  9 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                 79         var systemIdentity = Enc
+                                                                             oding.ASCII.GetBytes("host::Subs
+                                                                             ystem\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                287         return Encoding.ASCII.Ge
+                                                                             tBytes(AndroidPubKey.Encode(rsa,
+                                                                              "Subsystem") + "\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbMdnsDiscoverer.cs              6 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs              10 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs              51             var certReq = new Ce
+                                                                             rtificateRequest("CN=subsystem@l
+                                                                             ocalhost", _rsaKey,
+                                                                             HashAlgorithmName.SHA256,
+                                                                             RSASignaturePadding.Pkcs1);
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs             105             byte[] pubKeyBytes
+                                                                             = Encoding.UTF8.GetBytes(Android
+                                                                             PubKey.Encode(_rsaKey,
+                                                                             "Subsystem") + "\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AndroidPubKey.cs                  5 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\ConscryptAdbTransport.cs          8 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\ConscryptAdbTransport.cs         33         var certReq = new Certif
+                                                                             icateRequest("CN=Subsystem",
+                                                                             clientKey,
+                                                                             HashAlgorithmName.SHA256,
+                                                                             RSASignaturePadding.Pkcs1);
+C:\dev\Terminal\src\Terminal.Android\Adb\IAdbTransport.cs                  7 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\Spake2.cs                         4 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\Spake25519Client.cs               7 namespace Subsystem;
+
+PS (2026) C:\dev\Terminal\src> Get-ChildItem . -Recurse -File |
+>>     Select-String -Pattern 'Subsystem','VOM' |
+>>     Select-Object Path, LineNumber, Line |
+>>     Format-Table -Wrap
+
+Path                                                              LineNumber Line
+----                                                              ---------- ----
+C:\dev\Terminal\src\Terminal.Android\AdbLog.cs                             1 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\AdbLoopback.cs                       11 using Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                  9 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                 79         var systemIdentity = Enc
+                                                                             oding.ASCII.GetBytes("host::Subs
+                                                                             ystem\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbConnection.cs                287         return Encoding.ASCII.Ge
+                                                                             tBytes(AndroidPubKey.Encode(rsa,
+                                                                              "Subsystem") + "\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbMdnsDiscoverer.cs              6 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbMdnsDiscoverer.cs             14     private const string Tag =
+                                                                             "SubsystemMdns";
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs              10 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs              51             var certReq = new Ce
+                                                                             rtificateRequest("CN=subsystem@l
+                                                                             ocalhost", _rsaKey,
+                                                                             HashAlgorithmName.SHA256,
+                                                                             RSASignaturePadding.Pkcs1);
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs             105             byte[] pubKeyBytes
+                                                                             = Encoding.UTF8.GetBytes(Android
+                                                                             PubKey.Encode(_rsaKey,
+                                                                             "Subsystem") + "\0");
+C:\dev\Terminal\src\Terminal.Android\Adb\AdbPairingClient.cs             119             Android.Util.Log.Err
+                                                                             or("SubsystemDebug", $"Pairing
+                                                                             exception: {ex}");
+C:\dev\Terminal\src\Terminal.Android\Adb\AndroidPubKey.cs                  5 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\ConscryptAdbTransport.cs          8 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\ConscryptAdbTransport.cs         33         var certReq = new Certif
+                                                                             icateRequest("CN=Subsystem",
+                                                                             clientKey,
+                                                                             HashAlgorithmName.SHA256,
+                                                                             RSASignaturePadding.Pkcs1);
+C:\dev\Terminal\src\Terminal.Android\Adb\IAdbTransport.cs                  7 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\Spake2.cs                         4 namespace Subsystem;
+C:\dev\Terminal\src\Terminal.Android\Adb\Spake25519Client.cs               7 namespace Subsystem;
+
+C:\dev\Terminal\README.md                           27 - Additive post-build hardpoints with deterministic
+                                                       hashes and signed XML release receipts
+C:\dev\Terminal\README.md                           28 - Additive Edit hardpoint with native multiline
+                                                       input, cursor/dirty state, and open/save behavior
+C:\dev\Terminal\README.md                           37 2. The Android-free **TerminalEngine** owns VT
+                                                       parsing, screens, cells, cursor, modes, scrollback,
+                                                       selection state, and semantic terminal events.
+C:\dev\Terminal\README.md                           41 6. **Surface hardpoints** declare typed native UI and
+                                                       attach PowerShell behavior without becoming
+                                                       compile-time dependencies of the base APK.
+C:\dev\Terminal\README.md                           82 - `src/Terminal.Engine` — Android-free terminal
+                                                       semantics and VT state machine
+C:\dev\Terminal\README.md                           84 - `tests/Terminal.Engine.Tests` — executable terminal
+                                                       contract tests run by every normal build
+C:\dev\Terminal\README.md                           88 - `schemas` — executable Surface API and hardpoint
+                                                       manifest grammars
+C:\dev\Terminal\README.md                           89 - `hardpoints` — optional Surface XML, PowerShell
+                                                       behavior, and origin-scoped assets
+C:\dev\Terminal\README.md                           90 - `releases` — additive cargo and signing-profile
+                                                       recipes
+C:\dev\Terminal\BOS_SPEC.md                         12 **Optional server cargo:** [Kestrel Design
+                                                       Specification](KESTREL_SPEC.md)
+C:\dev\Terminal\BOS_SPEC.md                         35        │  └─ admitted execution
+C:\dev\Terminal\BOS_SPEC.md                         41                     └─ NativeAOT router / cargo
+C:\dev\Terminal\BOS_SPEC.md                         44 Terminal bootstrap initializes BOS and Remedy
+                                                       Generation Zero as cooperating authorities inside the
+                                                       application boundary. BOS owns semantic policy and
+                                                       admission. Generation Zero owns subordinate worker
+                                                       identity, containment, channels, cancellation,
+                                                       collapse and retirement. An ordinary capability such
+                                                       as torch or haptics executes through its owning
+                                                       Android adapter; it does not traverse Generation Zero.
+C:\dev\Terminal\BOS_SPEC.md                         72     whether execution is admitted
+C:\dev\Terminal\BOS_SPEC.md                        107 BOS> TORCH ON
+C:\dev\Terminal\BOS_SPEC.md                        141 worker receives admitted capability endpoint
+C:\dev\Terminal\BOS_SPEC.md                        172 `BOS>` is a cockpit.
+C:\dev\Terminal\BOS_SPEC.md                        221 PowerShell, Roslyn and other heavyweight runtimes may
+                                                       be bundled, but they remain dormant cargo until an
+                                                       admitted executor launches them in a separate worker
+                                                       generation.
+C:\dev\Terminal\BOS_SPEC.md                        239 NativeAOT router
+C:\dev\Terminal\BOS_SPEC.md                        250 router stops admission and releases route-local
+                                                       resources
+C:\dev\Terminal\BOS_SPEC.md                        252 router acknowledges quiescence and exits
+C:\dev\Terminal\BOS_SPEC.md                        257 If orderly cleanup fails, Remedy terminates the
+                                                       contained worker and the operating system provides
+                                                       the final process-memory and kernel-resource
+                                                       reclamation boundary. A v0 worker must not survive
+                                                       terminal closure of its inherited executive channel;
+                                                       platform containment must prevent orphan cargo if the
+                                                       Terminal/Generation Zero process dies.
+C:\dev\Terminal\BOS_SPEC.md                        325 A human-facing invocation exposed through `BOS>`.
+C:\dev\Terminal\BOS_SPEC.md                        449 policy admission
+C:\dev\Terminal\BOS_SPEC.md                        513 BOS>
+C:\dev\Terminal\BOS_SPEC.md                        680 terminal.router
+C:\dev\Terminal\BOS_SPEC.md                        695 BOS understands that an admitted entrypoint can be
+                                                       launched through an executor identifier. It does not
+                                                       understand the implementation internals of each
+                                                       runtime.
+C:\dev\Terminal\BOS_SPEC.md                        706 future compatibility cargo
+C:\dev\Terminal\BOS_SPEC.md                        709 BOS asks for an admitted app launch. The adapter
+                                                       identified by the opaque `ExecutorId` interprets
+                                                       executor-specific target metadata and translates the
+                                                       request into platform mechanics. Adapters that create
+                                                       contained subordinate workers use Remedy; adapters
+                                                       for ordinary platform capabilities do not.
+C:\dev\Terminal\BOS_SPEC.md                        720 BOS> PWSH
+C:\dev\Terminal\BOS_SPEC.md                        833 BOS>
+C:\dev\Terminal\BOS_SPEC.md                        910     → remain at BOS>
+C:\dev\Terminal\BOS_SPEC.md                        913     → attach a TerminalEngine and switch the same
+                                                       root to VT presentation
+C:\dev\Terminal\BOS_SPEC.md                        916     → yield to the admitted Android component
+C:\dev\Terminal\BOS_SPEC.md                        922     → remain at BOS> and report the admitted job
+                                                       identity
+C:\dev\Terminal\BOS_SPEC.md                        957 A NativeAOT app may return `InlineResult`; managed
+                                                       cargo may return `PresentableSurface`; a Bionic
+                                                       executable may return `BackgroundJob`; PowerShell may
+                                                       return `InteractiveTerminal`. Executor identity and
+                                                       presentation outcome remain orthogonal.
+C:\dev\Terminal\BOS_SPEC.md                        961 When an admitted executor returns an interactive
+                                                       PTY/ConPTY route:
+C:\dev\Terminal\BOS_SPEC.md                        966 Terminal attaches the route to its own TerminalEngine
+C:\dev\Terminal\BOS_SPEC.md                        974 BOS>
+C:\dev\Terminal\BOS_SPEC.md                        999 BOS> TORCH ON
+C:\dev\Terminal\BOS_SPEC.md                       1005 Hosted cargo such as:
+C:\dev\Terminal\BOS_SPEC.md                       1031 Terminal retains an explicit escape gesture that
+                                                       hosted cargo cannot capture. Mouse mode, alternate
+                                                       screen and application cursor state are VT protocol
+                                                       state inside the current route, not new Android
+                                                       presentation modes.
+C:\dev\Terminal\BOS_SPEC.md                       1193 BOS> TORCH ON
+C:\dev\Terminal\BOS_SPEC.md                       1200 BOS> START CAMERA
+C:\dev\Terminal\BOS_SPEC.md                       1215 BOS> HELP TORCH
+C:\dev\Terminal\BOS_SPEC.md                       1229 BOS> HELP
+C:\dev\Terminal\BOS_SPEC.md                       1232 should enumerate current admitted commands, including
+                                                       dynamically contributed ones.
+C:\dev\Terminal\BOS_SPEC.md                       1238 Subsystem eventually grows as detachable capability
+                                                       moss.
+C:\dev\Terminal\BOS_SPEC.md                       1304 A worker sees only capabilities admitted to it.
+C:\dev\Terminal\BOS_SPEC.md                       1321 The first implementation does not need a giant ACL
+                                                       framework. It does need explicit admission and
+                                                       enforceable endpoints for every authority it claims
+                                                       to narrow. Until those exist for external cargo,
+                                                       narrowing is a design requirement rather than a
+                                                       security claim.
+C:\dev\Terminal\BOS_SPEC.md                       1343 a monolithic "Subsystem"
+C:\dev\Terminal\BOS_SPEC.md                       1379 ├─ Admission/
+C:\dev\Terminal\BOS_SPEC.md                       1407 BOS> VER
+C:\dev\Terminal\BOS_SPEC.md                       1410 BOS> VIBRATE 40
+C:\dev\Terminal\BOS_SPEC.md                       1413 BOS> TORCH ON
+C:\dev\Terminal\BOS_SPEC.md                       1416 BOS> TORCH OFF
+C:\dev\Terminal\BOS_SPEC.md                       1419 BOS> PWSH
+C:\dev\Terminal\BOS_SPEC.md                       1421 the selected executor adapter ensures an admitted
+                                                       Remedy router generation exists
+C:\dev\Terminal\BOS_SPEC.md                       1427 the now-idle router quiesces and its worker
+                                                       generation retires
+C:\dev\Terminal\BOS_SPEC.md                       1429 BOS>
+C:\dev\Terminal\BOS_SPEC.md                       1458 BOS> visible
+C:\dev\Terminal\BOS_SPEC.md                       1494 BOS> VER
+C:\dev\Terminal\BOS_SPEC.md                       1498 BOS> VIBRATE 40
+C:\dev\Terminal\BOS_SPEC.md                       1502 BOS> TORCH ON
+C:\dev\Terminal\BOS_SPEC.md                       1506 BOS> PWSH
+C:\dev\Terminal\BOS_SPEC.md                       1508     → admitted Remedy router generation created if
+                                                       none is active
+C:\dev\Terminal\BOS_SPEC.md                       1513     → because this is the final route, router
+                                                       explicitly quiesces
+C:\dev\Terminal\BOS_SPEC.md                       1518 BOS>
+C:\dev\Terminal\BOS_SPEC.md                       1521 This receipt must assert that PowerShell/CoreCLR and
+                                                       Roslyn are not resident before `PWSH`, that Terminal
+                                                       never infers presentation from executable identity,
+                                                       and that no second presentation root appears during
+                                                       the transition. A multiplexer receipt must
+                                                       additionally prove that closing one route does not
+                                                       retire a router generation while another admitted
+                                                       route remains active.
+C:\dev\Terminal\BOS_SPEC.md                       1548 capability admission
+C:\dev\Terminal\docs\ARCHITECTURE.md                 6 2. **TerminalEngine** is Android-free and owns VT
+                                                       parsing, primary/alternate screens, cell state,
+                                                       cursor, scroll regions, scrollback, modes, selection
+                                                       state, and semantic terminal events.
+C:\dev\Terminal\docs\ARCHITECTURE.md                10 6. **Surface/hardpoint boundary** owns typed UI
+                                                       documents, origin-scoped resources, serialized
+                                                       semantic events, and additive release cargo. It does
+                                                       not own the runspace, Android compiled resources,
+                                                       package identity, or signing.
+C:\dev\Terminal\docs\ARCHITECTURE.md                16 The executable XML grammar lives in
+                                                       `schemas/surface-1.xsd` and
+                                                       `schemas/hardpoint-1.xsd`. Prose contract notes
+                                                       explain semantics; the schemas and strict parsers
+                                                       define accepted document shape.
+C:\dev\Terminal\docs\ARCHITECTURE.md                18 The shipping `.csproj` contains the stable mechanism
+                                                       only. Optional hardpoints are admitted after
+                                                       compilation by `scripts/Publish-TerminalRelease.ps1`;
+                                                       the publisher proves that existing APK payload bytes
+                                                       did not change before aligning, signing, verifying,
+                                                       and emitting an external receipt. Roslyn is a peer
+                                                       capability of Terminal's PowerShell platform, not a
+                                                       Surface dependency.
+C:\dev\Terminal\docs\ARCHITECTURE.md                20 The proven ADB protocol sources now use a
+                                                       Terminal-owned long-running read task and logger.
+                                                       They have no VOM or runtime-broker dependency.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            25       |     projects BOS, VT and admitted surfaces
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            28       |     owns commands, policy, admission and
+                                                       semantic results
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            34       |           translates admitted execution into
+                                                       generic lifecycle work
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            41                   |-- NativeAOT terminal router
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            43                   |     `-- pwsh / bash / edit /
+                                                       other console cargo
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            45                   |-- native cargo host
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            46                   |     `-- admitted packaged .so
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            48                   `-- other admitted worker cargo
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            54 BOS> TORCH ON
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            55     -> BOS policy/admission
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            59 BOS> PWSH
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            60     -> BOS policy/admission
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            63     -> terminal router
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            64     -> pwsh cargo
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            69 > **BOS/platform policy admits execution; Remedy
+                                                       enforces subordinate generation, authority, lifetime,
+                                                       fencing and retirement; Terminal presents the
+                                                       admitted outcome; Android remains the final platform
+                                                       authority.**
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            82 | Terminal bootstrap | Construction and orderly
+                                                       shutdown of the trusted resident baseline | Cargo
+                                                       policy or platform impersonation | Android process
+                                                       lifetime |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            83 | Terminal presentation | One active root, input
+                                                       projection, BOS/VT/surface transitions, visual state
+                                                       | Capability admission, worker identity, shell
+                                                       execution | Activity/View lifecycle |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            86 | Terminal Remedy adapter | Translation from admitted
+                                                       Terminal execution to Remedy's stable ABI | Terminal
+                                                       policy inside Remedy, raw Terminal identities inside
+                                                       Gen0 | Terminal bootstrap |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            87 | Remedy Generation Zero | Worker generations,
+                                                       admitted endpoints, cancellation, collapse, fencing,
+                                                       death and retirement | BOS policy, Terminal sessions,
+                                                       ConPTY, PowerShell, VT, Android feature semantics |
+                                                       Gen0 plus OS process containment |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            88 | Terminal router | Route table, PTY/ConPTY, child
+                                                       processes, bounded buffers, resize and route shutdown
+                                                       | Durable Terminal `SessionId`, BOS admission, Gen0
+                                                       policy | Router quiesce; Gen0 collapse if it fails |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            89 | Native cargo host | Loading one admitted native
+                                                       package inside a disposable worker boundary | Loading
+                                                       arbitrary native code into BOS, exporting raw
+                                                       pointers | Host exit; Gen0 retirement |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md            90 | Cargo | Its own domain behavior | Ambient
+                                                       authority, durable identity derived from
+                                                       PID/HANDLE/fd | Owning route/worker generation |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           104   RouteId as an opaque admitted result, Remedy
+                                                       adapter contract
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           110 Router may know
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           132   router
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           135   editor cargo
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           164       -> Terminal router
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           184 Cargo does not mint authoritative presentation
+                                                       outcomes. An admitted executor adapter validates the
+                                                       executor result and constructs the corresponding
+                                                       `InvocationOutcome` inside BOS's semantic path.
+                                                       Terminal accepts that typed outcome, not an untrusted
+                                                       cargo request to change presentation. This prevents a
+                                                       package from manufacturing a `RouteId`,
+                                                       `SurfaceLease` or Android handoff authority.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           212 Packaged native code is admitted cargo, not a plugin
+                                                       inside the resident core.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           221 BOS provenance + capability admission
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           227 disposable native cargo host
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           229         `-- dlopen(admitted package.so)
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           236 3. Raw pointers and native object identity remain
+                                                       inside the cargo host.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           237 4. Only framed semantic messages, opaque handles and
+                                                       explicitly admitted resource endpoints cross the
+                                                       worker boundary.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           248     != Router RouteId
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           267   -> router releases that route's child, PTY/ConPTY,
+                                                       pipes and buffers
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           268   -> router emits CLOSED(RouteId)
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           271   -> router worker generation and unrelated routes
+                                                       remain alive
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           279 admitted shutdown, policy revocation or bootstrap
+                                                       teardown
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           282   -> router / cargo host closes all locally-owned
+                                                       routes and resources
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           313 | VT route exits normally | Router closes only that
+                                                       route; Terminal restores parked BOS state when it was
+                                                       active; other routes and the router remain valid |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           314 | Routed shell cargo crashes | Router closes and
+                                                       reports that route; Gen0 remains uninvolved unless
+                                                       the router worker itself fails |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           315 | Native cargo host or router worker crashes | Gen0
+                                                       observes worker/channel death, retires and fences the
+                                                       generation; BOS remains available |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           316 | Router ignores quiesce | Gen0 collapses worker
+                                                       generation; Terminal reports loss, without inventing
+                                                       recovery |
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           321 Automatic restart, transparent shell replacement and
+                                                       persistent sessions after router death are not
+                                                       implied by this chart.
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           336 router -> becomes the durable Terminal session
+                                                       authority
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           340 cargo -> mints an authoritative InvocationOutcome or
+                                                       presentation lease
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           341 one route closes -> entire healthy router generation
+                                                       is retired
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           365 BOS> VER
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           369 BOS> VIBRATE 40
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           373 BOS> TORCH ON
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           377 BOS> PWSH
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           379   -> Remedy launches an admitted router generation if
+                                                       none is active
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           380   -> router returns InteractiveTerminal(RouteId)
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           384   -> because it is the final route, router quiesces
+                                                       and generation retires
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           385   -> Terminal restores BOS>
+C:\dev\Terminal\docs\BOS-ORGANIZATION.md           388 The receipt succeeds only if direct capabilities
+                                                       never touch Remedy, interactive cargo cannot outlive
+                                                       its admitted generation, the presentation root
+                                                       remains singular and the idle state returns to BOS
+                                                       plus an idle Gen0 with zero subordinate workers. In a
+                                                       multi-route receipt, closing one route must leave the
+                                                       router generation and every other admitted route
+                                                       alive.
+C:\dev\Terminal\docs\DESIGN-CANON.md                17     future hardpoints
+C:\dev\Terminal\docs\DESIGN-CANON.md                20 The editor is not the product root and hardpoints are
+                                                       not editor plugins. Surface is the semantic boundary
+                                                       that lets each application attach PowerShell behavior
+                                                       to native presentation without becoming a
+                                                       compile-time dependency of the base APK.
+C:\dev\Terminal\docs\DESIGN-CANON.md                25 - `edit.obp` is the first serious post-build
+                                                       hardpoint and the authority for editor anatomy.
+C:\dev\Terminal\docs\DESIGN-CANON.md                41 Translate HTML hierarchy to typed Surface XML,
+                                                       JavaScript behavior to PowerShell, browser controls
+                                                       to native renderer primitives, and expensive reusable
+                                                       machinery to an explicitly admitted C# control seam.
+C:\dev\Terminal\docs\DESIGN-CANON.md                59 The current `dev.mansfield.edit` hardpoint proves the
+                                                       granite seam: path identity, native multiline
+                                                       editing, dirty state, cursor position, UTF-8 size,
+                                                       open/save, and Activity reconstruction. It is not yet
+                                                       the complete donor UI. Menus, the settings blade,
+                                                       syntax-aware reusable editor machinery, and the full
+                                                       essential command set remain deliberate follow-on
+                                                       work.
+C:\dev\Terminal\docs\EDIT-PROOF.md                   1 # Edit hardpoint proof
+C:\dev\Terminal\docs\EDIT-PROOF.md                   5 `dev.mansfield.edit` is hydrated after the clean APK
+                                                       build. The base project has no compile-time knowledge
+                                                       of the hardpoint's XML or PowerShell behavior.
+C:\dev\Terminal\docs\EDIT-PROOF.md                   9 - Surface API 1 admitted and rendered the hardpoint
+                                                       from `assets/hardpoints/dev.mansfield.edit`.
+C:\dev\Terminal\docs\EDIT-PROOF.md                  17 - Closing a hardpoint leaves a quiet prompt; `$UI`
+                                                       remains available for intentional PowerShell
+                                                       inspection.
+C:\dev\Terminal\docs\EDIT-PROOF.md                  21 This proves the post-build application seam and a
+                                                       defensible native text primitive. It does not claim a
+                                                       complete code editor. Syntax services, line numbers,
+                                                       undo/redo command projection, find/replace, command
+                                                       overflow, the settings blade, crash recovery, and
+                                                       file-picker integration remain follow-on hardpoint or
+                                                       admitted-control work.
+C:\dev\Terminal\docs\HYPERSURFACE.md                49    admitted binding source; markup defaults and live
+                                                       state never compete for
+C:\dev\Terminal\docs\HYPERSURFACE.md               224 Profiles are trusted Terminal assets. Packages select
+                                                       an admitted profile; they
+C:\dev\Terminal\docs\HYPERSURFACE.md               314 Application markup may select admitted semantic roles:
+C:\dev\Terminal\docs\HYPERSURFACE.md               406 At theme admission or load time:
+C:\dev\Terminal\docs\HYPERSURFACE.md               430 Initial admitted roles should remain restrained:
+C:\dev\Terminal\docs\HYPERSURFACE.md               524 TUI and shader nodes are typed semantic children.
+                                                       They receive admitted input
+C:\dev\Terminal\docs\HYPERSURFACE.md               556 4. at least one admitted renderer
+C:\dev\Terminal\docs\HYPERSURFACE.md               598 No current schema, hardpoint, or Settings
+                                                       implementation is deprecated by this
+C:\dev\Terminal\docs\IDENTITY-CONTRACT.md          116 It is the supported red carpet, not a mandatory
+                                                       gateway. A device owner may deliberately configure
+                                                       another authentication or transport boundary,
+                                                       including local pairing, client certificates, a
+                                                       private overlay network, an owner-operated reverse
+                                                       proxy or a future admitted authentication package.
+C:\dev\Terminal\docs\IDENTITY-CONTRACT.md          177 router frames
+C:\dev\Terminal\docs\IDENTITY-CONTRACT.md          211     != may install cargo
+C:\dev\Terminal\docs\IDENTITY-CONTRACT.md          292 Only after this receipt is green should a remote
+                                                       principal request a low-risk BOS capability. Storage,
+                                                       shell launch, package admission and administrative
+                                                       operations require separate receipts.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md             1 # Kestrel Cargo Contract
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md             4 **Role:** optional managed server cargo supervised
+                                                       through BOS and Remedy
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            10 Kestrel is a strong proof of BOS lifecycle semantics
+                                                       because it combines a long-lived managed worker, an
+                                                       externally observable resource and explicit shutdown.
+                                                       It remains optional cargo.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            17 BOS command / admitted app
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            21 BOS policy and release-profile admission
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            40 `BackgroundJob` describes presentation semantics. It
+                                                       does not make the job its own lifecycle authority.
+                                                       Remedy owns worker mortality; BOS owns admission and
+                                                       leases; Android owns the application and
+                                                       foreground-service rules.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            43 Kestrel edge and an interactive PowerShell session
+                                                       are separate cargo profiles:
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            49     narrowly admitted ASP.NET Core managed closure
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            56     Roslyn only when separately admitted
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            60 the Kestrel worker may invoke only the narrow BOS
+                                                       capability IPC admitted for that
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            71     bind scope: loopback | local-network | explicitly
+                                                       admitted interface
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md            79     one or more admitted roots
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           100 authentication required before LAN admission
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           106 Binding `0.0.0.0` is an explicit local-network
+                                                       exposure decision, not a convenience fallback.
+                                                       Terminal must show the effective interfaces, port,
+                                                       transport, authentication state and served roots
+                                                       before admission and in the durable job notification.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           110 The maintained portal authenticates; it is not a
+                                                       traffic relay. Internet reachability still comes from
+                                                       an owner-chosen network path such as a private
+                                                       overlay, reverse proxy, tunnel or router
+                                                       configuration. Terminal must report authentication
+                                                       authority and network path as separate facts.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           131     includes every interface admitted by the socket,
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           191 ### Known-good Subsystem donor
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           193 The retired Subsystem Kestrel branch records a useful
+                                                       Android packaging proof. Its
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           215 Individual artifacts are admitted by their binary
+                                                       format, runtime requirements,
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           217 may be staged for Android; foreign native libraries
+                                                       are not admitted merely because
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           236 For the Play release profile, executable cargo must
+                                                       be delivered through the admitted Play artifact or
+                                                       another explicitly Play-compliant mechanism. The
+                                                       owner/sideload profile may have a broader
+                                                       package-origin policy without changing BOS semantics.
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           249     + BOS capability admission
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           264 BOS> SERVE START --LOOPBACK --PORT 0
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           265     -> listener lease admitted
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           273 BOS> JOB STOP <JobId>
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           287 3. an admitted read-only storage root cannot escape
+                                                       by `..`, links or alternate path spelling;
+C:\dev\Terminal\docs\KESTREL-CONTRACT.md           290 6. Activity destruction stops presentation work but
+                                                       does not terminate an admitted durable job;
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           13 `Terminal.Engine` owns terminal meaning. It may use
+                                                       CoreCLR and the base class library. It must not
+                                                       reference Android, Java, JNI, Vulkan, native handles,
+                                                       Activities, Views, Intents, Binder, or package state.
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           17 ### PowerShell and hardpoints
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           19 PowerShell scripts, dynamically compiled C#, and
+                                                       hydrated hardpoints are guests. They may ask Terminal
+                                                       to perform declared semantic operations and receive
+                                                       serializable results. They do not receive an
+                                                       `Activity`, `Context`, `View`, `Intent`, `IBinder`,
+                                                       `Surface`, JNI object, native handle, or arbitrary
+                                                       platform service.
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           42 Vulkan's ABI necessarily uses opaque native handles.
+                                                       Those handles may exist only inside a reviewed
+                                                       renderer adapter. They must not enter
+                                                       `Terminal.Engine`, PowerShell, Surface XML,
+                                                       hardpoints, command objects, persisted state, or
+                                                       general application plumbing.
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           88 | Semantic core | The `Terminal.Engine` project has
+                                                       no Android dependency; build and architecture tests
+                                                       keep it that way. | Implemented |
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           89 | Product source | Project boundaries and
+                                                       architecture checks currently keep `Terminal.Engine`
+                                                       platform-free and centralize Surface palette tokens.
+                                                       A dedicated build analyzer for native-handle and
+                                                       basement-path confinement remains required. | Partial
+                                                       |
+C:\dev\Terminal\docs\PLATFORM-BOUNDARY.md           91 | Hardpoints | The release hydrator admits declared
+                                                       assets only and proves that compiled APK payload
+                                                       bytes were not changed. XSD validation and the strict
+                                                       runtime parser constrain document shape. |
+                                                       Implemented |
+C:\dev\Terminal\docs\RELEASES.md                     3 Terminal separates the compiled Android identity from
+                                                       optional product cargo.
+C:\dev\Terminal\docs\RELEASES.md                     5 The `.csproj` produces a clean base APK containing
+                                                       CoreCLR, PowerShell, Roslyn, the native console host,
+                                                       Surface Contract 1, the renderer, and the hardpoint
+                                                       loader. A release recipe then admits hardpoints under
+                                                       `assets/hardpoints/`, aligns the APK, signs it,
+                                                       verifies it, and writes an external XML receipt.
+C:\dev\Terminal\docs\RELEASES.md                     9 ## Distribution profiles are admission policy
+C:\dev\Terminal\docs\RELEASES.md                    15     executable cargo delivered inside the
+                                                       Play-distributed artifact
+C:\dev\Terminal\docs\RELEASES.md                    16     interpreted hardpoints admitted only under the
+                                                       declared Terminal policy
+C:\dev\Terminal\docs\RELEASES.md                    17     no external dex, JAR or .so download/admission
+C:\dev\Terminal\docs\RELEASES.md                    20     may admit explicitly user-obtained cargo
+C:\dev\Terminal\docs\RELEASES.md                    26 This restriction belongs to release admission, not
+                                                       BOS ontology. `ExecutorId = native.shared-object`
+                                                       remains valid, but a Play build may resolve only
+                                                       cargo delivered through its admitted Play artifact or
+                                                       another explicitly Play-compliant delivery mechanism.
+C:\dev\Terminal\docs\RELEASES.md                    56 ## Recipe and hardpoint shape
+C:\dev\Terminal\docs\RELEASES.md                    61   <hardpoints>
+C:\dev\Terminal\docs\RELEASES.md                    62     <hardpoint
+                                                       src="../hardpoints/dev.mansfield.surface-proof" />
+C:\dev\Terminal\docs\RELEASES.md                    63     <hardpoint src="../hardpoints/dev.mansfield.edit"
+                                                       />
+C:\dev\Terminal\docs\RELEASES.md                    64   </hardpoints>
+C:\dev\Terminal\docs\RELEASES.md                    70 hardpoints/dev.mansfield.surface-proof/
+C:\dev\Terminal\docs\RELEASES.md                    76 hardpoints/dev.mansfield.edit/
+C:\dev\Terminal\docs\RELEASES.md                    82 Every recipe path is relative. Hardpoints may not
+                                                       contain links, absolute paths, path escapes,
+                                                       duplicate IDs, unsupported Surface API versions, or
+                                                       undeclared UI/script files.
+C:\dev\Terminal\docs\RELEASES.md                    97 ## Admission guarantees
+C:\dev\Terminal\docs\RELEASES.md                   101 1. validates the recipe and every hardpoint with DTDs
+                                                       disabled;
+C:\dev\Terminal\docs\RELEASES.md                   102 2. deterministically hashes each sorted hardpoint
+                                                       tree;
+C:\dev\Terminal\docs\RELEASES.md                   104 4. adds only `assets/hardpoints/<id>/...` entries;
+C:\dev\Terminal\docs\RELEASES.md                   109 9. emits an external receipt containing the base,
+                                                       recipe, cargo, signer, and final artifact hashes.
+C:\dev\Terminal\docs\RELEASES.md                   111 The receipt is provenance, not runtime authority.
+                                                       Terminal boots without it. A hardpoint cannot assume
+                                                       a package name, APK filename, signing key, channel,
+                                                       or workstation path.
+C:\dev\Terminal\docs\SURFACE-CONTRACT-0.xml          9     <invariant>Every document has one immutable
+                                                       hardpoint origin and resource resolver.</invariant>
+C:\dev\Terminal\docs\SURFACE-CONTRACT-0.xml         89     <behavior>Handlers are ScriptBlock properties
+                                                       assigned from the hardpoint PS1 after the native
+                                                       document is shown.</behavior>
+C:\dev\Terminal\docs\SURFACE-CONTRACT-0.xml        100     <accepted example="../Assets/logo.png">Paths
+                                                       relative to the source document, contained by the
+                                                       hardpoint root.</accepted>
+C:\dev\Terminal\docs\SURFACE-CONTRACT-0.xml        101     <accepted example="asset:logo.png">Logical
+                                                       shorthand for Assets/logo.png in the same
+                                                       hardpoint.</accepted>
+C:\dev\Terminal\docs\SURFACE-CONTRACT-1.xml          9     <rule>A hardpoint declares the minimum Surface
+                                                       API it requires in manifest.xml.</rule>
+C:\dev\Terminal\docs\SURFACE-CONTRACT-1.xml         10     <rule>The base rejects a hardpoint whose declared
+                                                       API is newer than the renderer.</rule>
+C:\dev\Terminal\docs\SURFACE-PROOF.md                9 - Hydrated hardpoint discovery:
+                                                       `dev.mansfield.surface-proof` loaded from APK assets
+                                                       without a `.csproj` asset reference.
+C:\dev\Terminal\docs\SURFACE-PROOF.md               16 - Additive admission: attempting to use the hydrated
+                                                       APK as a base was rejected.
+C:\dev\Terminal\docs\SURFACE-PROOF.md               38 - durable hardpoint installation outside release
+                                                       hydration.
+C:\dev\Terminal\docs\SURFACE-PROOF.md               40 They remain outside the contract until a real
+                                                       hardpoint proves the smallest defensible shape.
+C:\dev\Terminal\docs\TERMINAL-UX.md                 14 TerminalEngine       VT, screens, cursor, modes,
+                                                       scrollback, selection
+C:\dev\Terminal\docs\TERMINAL-UX.md                 26 1. TerminalEngine: screens, cursor, VT and scrollback.
+C:\dev\Terminal\docs\UX-GALLERY.md                   3 `dev.mansfield.gallery` is the executable design
+                                                       fixture for Surface API 1. It is included in
+                                                       development releases and is not required cargo for a
+                                                       production release.
+C:\dev\Terminal\docs\UX-GALLERY.md                   7 1. show hardpoint authors the controls and
+                                                       compositions that actually exist;
+C:\dev\Terminal\docs\UX-GALLERY.md                  11 ## What a hardpoint is
+C:\dev\Terminal\docs\UX-GALLERY.md                  13 A hardpoint is a small, origin-scoped package:
+C:\dev\Terminal\docs\UX-GALLERY.md                  16 hardpoints/<reverse-domain-id>/
+C:\dev\Terminal\docs\UX-GALLERY.md                  40 Unknown tokens and tokens applied to the wrong node
+                                                       are rejected. Shared colors, typography, spacing, and
+                                                       chrome dimensions live in `SurfaceTheme.cs`;
+                                                       hardpoints select semantics rather than copying
+                                                       visual constants.
+C:\dev\Terminal\docs\WORKSPACE.md                    5 `src/Terminal.Android` is the only product project.
+                                                       It contains the native Android Canvas console,
+                                                       persistent in-process PowerShell runspace,
+                                                       script-backed configuration, OOBE, Android capability
+                                                       bridge, session notification, locally vendored
+                                                       self-ADB protocol implementation, and the stable
+                                                       Surface/hardpoint mechanism.
+C:\dev\Terminal\docs\WORKSPACE.md                    7 `hardpoints` contains optional release cargo and
+                                                       `releases` selects cargo for a compiled base. Neither
+                                                       directory is referenced by the product `.csproj`; the
+                                                       additive publisher injects selected files only after
+                                                       the base APK exists.
+C:\dev\Terminal\docs\WORKSPACE.md                   11 - `deps/Remedy` is a Git submodule pinned to the
+                                                       audited authority/lifecycle implementation. Terminal
+                                                       owns the adapter, router, and session semantics above
+                                                       Remedy's stable C boundary.
+C:\dev\Terminal\docs\WORKSPACE.md                   12 - `src/Terminal.Router` and
+                                                       `tests/native/integration` prove concurrent routed
+                                                       sessions on Windows and Android. They are not yet
+                                                       linked into the shipping Android application
+                                                       lifecycle.
+
+Yes — I do have the current docs from the repository snapshot, and you were right to worry about them. The code is already moving faster than the prose.
+
+The README still defines Terminal around an in-process PowerShell runspace, calls the VT layer TerminalEngine, calls the extension mechanism “hardpoints,” and calls release payloads “cargo.” docs/ARCHITECTURE.md repeats TerminalEngine, hardpoints, cargo, and even preserves a sentence explaining that ADB has “no VOM” dependency. docs/BOS-ORGANIZATION.md is particularly stale: it is full of router, cargo, admission, cargo host, etc. And BOS_SPEC.md literally contains “Subsystem eventually grows as detachable capability moss.” That sentence needs to die with fire.
+
+I suggest we maintain this as an append-only terminology ledger. I won't renumber or silently remove entries; once something is cleaned up, we mark it RESOLVED.
+
+ISM-001 — Subsystem as Terminal identity. Replace live namespace Subsystem, using Subsystem, ADB identities/log tags/cert names, and any docs treating Subsystem as a Terminal component. Likely code namespace: Terminal.Android.Adb. Historical statements about a retired Subsystem donor are different: either quarantine them in archaeology/donor documentation or retain them explicitly as history; do not mechanically pretend the donor was named Terminal. Current BOS prose treating Subsystem as future architecture is simply wrong.
+ISM-002 — VOM / runtime-broker ontology. Remove from current Terminal documentation, including negative assertions like “has no VOM dependency.” Terminal doesn't need to carry an obituary for an architecture it doesn't have. The current docs contain exactly this stale assertion.
+ISM-003 — Terminal.Engine / TerminalEngine. Replace Terminal-owned generic “engine” identity with the actual Terminal.VT vocabulary. The folder is already Terminal.VT; project namespace, references, tests, docs and class identity are lagging behind. README and platform-boundary docs still teach Terminal.Engine as canonical.
+ISM-004 — Router / Terminal.Router. Replace with Multiplexer throughout project, namespace, assembly, protocol names, native symbols, docs, tests and status reporting. Terminal.Multiplexer is already the folder while its internals are still Terminal.Router.
+ISM-005 — RouterCodec. Kill specifically. It is just four protocol constants under a grandiose name. Fold it into MultiplexerProtocol or otherwise name the actual wire-format responsibility.
+ISM-006 — Route when the thing is actually an interactive session. Audit RouterRoute, RouteId, ConsoleRouteStatus, _routes, etc. Do not blind-replace legitimate protocol routing terminology, but if the object represents one PTY/ConPTY-backed interactive session, call it Session. Current IPtySession is already the semantic confession.
+ISM-007 — cargo. Replace with the boring noun that actually applies: application, process, executable, package, module, assembly, shared library, worker. The docs use “cargo” for everything from PWSH to .so files to Kestrel.
+ISM-008 — hardpoint. Audit and replace with the actual category: application, package, UI contribution, settings contribution, etc. The docs currently make “hardpoint” part of the repository ontology, schema names, release system, Edit, Surface and PowerShell architecture. This is one of the biggest terminology migrations.
+ISM-009 — admission / admitted everywhere. Replace with the actual operation: authorize, allow, register, install, load, start, create, accept. Keep the concept only where there is genuinely a security/policy decision deserving a distinct authorization term. BOS policy/admission appearing everywhere is abstraction fog. BOS> TORCH ON does not need an academic admissions office.
+ISM-010 — NativePwshConsole. Replace product/root namespaces, component identities, service names and strings with Terminal-owned identities. It survives as the Android root namespace and throughout the source.
+ISM-011 — PTY as the cross-platform abstraction. Generic layer becomes PseudoConsole. Windows implementation = ConPTY / CreatePseudoConsole; Android implementation = PTY / forkpty. Thus audit IPtySession, PtySessionFactory, WindowsPtySession, AndroidPtySession. The OS-specific implementation may truthfully retain PTY.
+ISM-012 — Terminal-owned IWhatever interfaces. Drop the C# I prefix for interfaces we own when an interface is actually justified at all. Do not rename framework-owned IDisposable, Android listener interfaces, etc. IPtySession, IAdbTransport, and ISurfaceResourceResolver are current candidates.
+ISM-013 — Console/Terminal conflation. Audit Terminal-owned names such as NativeConsoleView, ConsoleRouterStatus, ConsoleRouteStatus, and ConsoleBackend. Console = process-facing attachment; Terminal = VT interpretation/presentation. NativeConsoleView is painting terminal cells, so its name is particularly suspect. Current BOS status objects still say ConsoleRouterStatus.
+ISM-014 — BOS casing drift. BOS-owned source/type/command identity must follow the uppercase rule. Current tree has Terminal.BOS beside Terminal.Bos.csproj, BosEngine, BosStatus, etc. Normalize deliberately, not opportunistically.
+ISM-015 — wrong BOS prompt. Canonical prompt is BOS:\>. Current canonical docs repeatedly show BOS> and therefore teach the wrong product syntax. For example BOS_SPEC.md currently shows BOS> TORCH ON and BOS> START CAMERA.
+ISM-016 — PowerShell-first product architecture. This is more serious than naming. README currently opens with Terminal directly hosting PowerShell inside Android and describes a persistent in-process runspace as the product baseline. That conflicts with the architecture we're establishing: BOS is the resident command environment; PWSH/CoreCLR is optional subordinate execution. Docs must stop teaching the old topology.
+ISM-017 — PowerShell filesystem as Terminal's primary filesystem identity. Home:\profile.ps1, app-private PowerShell home, etc. can remain as PowerShell projection, but BOS documentation must lead with the BOS filesystem/prompt rather than make the PowerShell PSDrive look like the machine's native namespace. README currently does exactly that.
+ISM-018 — metaphorical architecture prose. Kill prose such as “capability moss,” “semantic trunk,” “cargo,” “granite seam,” and similar invented topology where ordinary systems nouns work. The Subsystem ... detachable capability moss sentence is the poster child.
+ISM-019 — generic Host where nothing is actually being hosted. This is conditional, not a global ban. PSHost / PowerShell host is a real Microsoft term and stays. “Native cargo host” should disappear with cargo; other *Host types should be checked against what they genuinely own.
+ISM-020 — C# visual casing inconsistency. _camelCase, camelCase, PascalCase, BOS ALL-CAPS, native snake_case are currently mixed for partly legitimate language reasons and partly history. Do not mass-rewrite this yet. We need one explicit house-style decision for Terminal-owned C#, while BOS remains its stricter ALL-CAPS island. This is the _exitCode problem you spotted.
+
+

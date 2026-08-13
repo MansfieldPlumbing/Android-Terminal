@@ -13,6 +13,7 @@ param(
 
 $project = Join-Path $PSScriptRoot '..\src\Terminal.Android\Terminal.Android.csproj'
 $engineTests = Join-Path $PSScriptRoot '..\tests\Terminal.Engine.Tests\Terminal.Engine.Tests.csproj'
+$bosTests = Join-Path $PSScriptRoot '..\tests\Terminal.Bos.Tests\Terminal.Bos.Tests.csproj'
 $packagedSettings = Join-Path $PSScriptRoot '..\src\Terminal.Android\Assets\settings.ps1'
 $spareSettings = Join-Path $PSScriptRoot '..\templates\settings.default.ps1'
 if ((Get-FileHash $packagedSettings).Hash -ne (Get-FileHash $spareSettings).Hash) {
@@ -23,6 +24,8 @@ if (-not $?) { exit 1 }
 & (Join-Path $PSScriptRoot 'Test-TerminalArchitecture.ps1')
 if (-not $?) { exit 1 }
 & $DotNet run --project $engineTests -c $Configuration
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+& $DotNet run --project $bosTests -c $Configuration
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 & $DotNet build $project -c $Configuration -r android-arm64 `
     -p:AndroidSdkDirectory=$AndroidSdk -p:JavaSdkDirectory=$JavaSdk

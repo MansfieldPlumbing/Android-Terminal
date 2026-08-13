@@ -1,0 +1,287 @@
+diff --git a/src/Terminal.Engine/TerminalEngine.cs b/src/Terminal.Engine/TerminalEngine.cs
+index 3837c41..b140307 100644
+--- a/src/Terminal.Engine/TerminalEngine.cs
++++ b/src/Terminal.Engine/TerminalEngine.cs
+@@ -10,6 +10,10 @@ public sealed class TerminalEngine
+     private sealed class Screen
+     {
+         public TerminalCell[][] Lines;
++        // WrappedRows[r] == true means row r's content continues onto row r+1
++        // because autowrap cut it off, not because of a real newline. This is
++        // the bit truncate-and-copy resize can't see; reflow depends on it.
++        public bool[] WrappedRows;
+         public int CursorColumn;
+         public int CursorRow;
+         public int SavedColumn;
+@@ -21,17 +25,26 @@ public sealed class TerminalEngine
+         public Screen(int columns, int rows)
+         {
+             Lines = CreateLines(columns, rows);
++            WrappedRows = new bool[rows];
+             ScrollBottom = rows - 1;
+         }
+ 
++        // Hard (non-reflowing) resize. Still used for the alternate screen,
++        // since full-screen apps (vim, htop, less) repaint on SIGWINCH anyway
++        // and reflowing their buffer would just be wasted, riskier work.
+         public void Resize(int columns, int rows)
+         {
+             var resized = CreateLines(columns, rows);
++            var resizedWrapped = new bool[rows];
+             int copyRows = Math.Min(rows, Lines.Length);
+             int copyColumns = Math.Min(columns, Lines[0].Length);
+             for (int row = 0; row < copyRows; row++)
++            {
+                 Array.Copy(Lines[row], resized[row], copyColumns);
++                resizedWrapped[row] = WrappedRows[row];
++            }
+             Lines = resized;
++            WrappedRows = resizedWrapped;
+             CursorColumn = Math.Clamp(CursorColumn, 0, columns - 1);
+             CursorRow = Math.Clamp(CursorRow, 0, rows - 1);
+             SavedColumn = Math.Clamp(SavedColumn, 0, columns - 1);
+@@ -42,9 +55,11 @@ public sealed class TerminalEngine
+         }
+     }
+ 
++    private readonly record struct ScrollbackLine(TerminalCell[] Cells, bool Wrapped);
++
+     private readonly object _gate = new();
+     private readonly StringBuilder _sequence = new(64);
+-    private readonly List<TerminalCell[]> _scrollback = [];
++    private readonly List<ScrollbackLine> _scrollback = [];
+     private readonly HashSet<int> _dirtyRows = [];
+     private readonly Dictionary<int, string> _hyperlinks = [];
+     private readonly List<TerminalEvent> _events = [];
+@@ -119,17 +134,143 @@ public sealed class TerminalEngine
+         lock (_gate)
+         {
+             if (columns == Columns && rows == Rows) return;
+-            _primary.Resize(columns, rows);
+-            _alternate.Resize(columns, rows);
+-            for (int i = 0; i < _scrollback.Count; i++)
+-                _scrollback[i] = ResizeLine(_scrollback[i], columns);
+-            _scrollbackOffset = Math.Clamp(_scrollbackOffset, 0, _scrollback.Count);
++            if (_alternateActive)
++            {
++                // Screen shown is the alt screen; still keep primary's shape
++                // in sync underneath so switching back doesn't jump-cut.
++                _primary.Resize(columns, rows);
++                _alternate.Resize(columns, rows);
++            }
++            else
++            {
++                ReflowPrimary(columns, rows);
++                _alternate.Resize(columns, rows);
++            }
+             MarkAllDirty();
+             _revision++;
+         }
+         Changed?.Invoke();
+     }
+ 
++    // Rebuilds scrollback + the live primary grid at a new column count by
++    // splicing autowrap-continued rows back into logical lines and
++    // re-chunking them at the new width, instead of truncating each row
++    // independently. Cursor position is carried through the same rebuild
++    // rather than clamped afterward.
++    private void ReflowPrimary(int newColumns, int newRows)
++    {
++        var logicalLines = new List<List<TerminalCell>>();
++        bool previousWrapped = false;
++        int cursorLogicalRow = -1, cursorLogicalCol = -1;
++
++        void Append(TerminalCell[] cells, bool wrapped, bool isCursorRow, int cursorColumn)
++        {
++            if (previousWrapped && logicalLines.Count > 0)
++            {
++                int baseColumn = logicalLines[^1].Count;
++                logicalLines[^1].AddRange(cells);
++                if (isCursorRow) { cursorLogicalRow = logicalLines.Count - 1; cursorLogicalCol = baseColumn + cursorColumn; }
++            }
++            else
++            {
++                logicalLines.Add(new List<TerminalCell>(cells));
++                if (isCursorRow) { cursorLogicalRow = logicalLines.Count - 1; cursorLogicalCol = cursorColumn; }
++            }
++            previousWrapped = wrapped;
++        }
++
++        foreach (ScrollbackLine sb in _scrollback)
++            Append(sb.Cells, sb.Wrapped, false, 0);
++        for (int row = 0; row < _primary.Lines.Length; row++)
++            Append(_primary.Lines[row], _primary.WrappedRows[row], row == _primary.CursorRow, _primary.CursorColumn);
++
++        var rebuilt = new List<(TerminalCell[] Cells, bool Wrapped)>();
++        int newCursorRow = -1, newCursorCol = 0;
++
++        for (int li = 0; li < logicalLines.Count; li++)
++        {
++            List<TerminalCell> line = logicalLines[li];
++            int start = 0;
++            do
++            {
++                int take = Math.Min(newColumns, line.Count - start);
++                // Don't split a wide glyph's continuation cell across a chunk boundary.
++                if (take == newColumns && start + take < line.Count && line[start + take].IsContinuation)
++                    take--;
++
++                var chunk = new TerminalCell[newColumns];
++                for (int i = 0; i < take; i++) chunk[i] = line[start + i];
++                for (int i = take; i < newColumns; i++) chunk[i] = TerminalCell.Empty;
++
++                bool more = start + take < line.Count;
++                rebuilt.Add((chunk, more));
++
++                if (li == cursorLogicalRow && cursorLogicalCol >= start &&
++                    (cursorLogicalCol < start + take || (!more && cursorLogicalCol == start + take)))
++                {
++                    newCursorRow = rebuilt.Count - 1;
++                    newCursorCol = Math.Min(cursorLogicalCol - start, newColumns - 1);
++                }
++
++                start += take;
++                if (take == 0) break; // empty logical line
++            } while (start < line.Count);
++        }
++
++        if (rebuilt.Count == 0)
++            rebuilt.Add((BlankLine(newColumns), false));
++
++        int screenStart = Math.Max(0, rebuilt.Count - newRows);
++        var newScrollback = new List<ScrollbackLine>();
++        for (int i = 0; i < screenStart; i++)
++            newScrollback.Add(new ScrollbackLine(rebuilt[i].Cells, rebuilt[i].Wrapped));
++
++        int visibleCount = rebuilt.Count - screenStart;
++        int padTop = newRows - visibleCount; // blank rows above if content is shorter than the new viewport
++        var screenLines = new TerminalCell[newRows][];
++        var screenWrapped = new bool[newRows];
++        for (int i = 0; i < newRows; i++)
++        {
++            int source = i - padTop;
++            if (source >= 0 && source < visibleCount)
++            {
++                screenLines[i] = rebuilt[screenStart + source].Cells;
++                screenWrapped[i] = rebuilt[screenStart + source].Wrapped;
++            }
++            else
++            {
++                screenLines[i] = BlankLine(newColumns);
++            }
++        }
++
++        _scrollback.Clear();
++        _scrollback.AddRange(newScrollback);
++
++        _primary.Lines = screenLines;
++        _primary.WrappedRows = screenWrapped;
++        _primary.ScrollTop = 0;
++        _primary.ScrollBottom = newRows - 1;
++        _primary.WrapPending = false;
++
++        if (newCursorRow >= 0)
++        {
++            int adjustedRow = newCursorRow - screenStart + padTop;
++            _primary.CursorRow = Math.Clamp(adjustedRow, 0, newRows - 1);
++            _primary.CursorColumn = Math.Clamp(newCursorCol, 0, newColumns - 1);
++        }
++        else
++        {
++            _primary.CursorRow = newRows - 1;
++            _primary.CursorColumn = 0;
++        }
++        _primary.SavedColumn = Math.Clamp(_primary.SavedColumn, 0, newColumns - 1);
++        _primary.SavedRow = Math.Clamp(_primary.SavedRow, 0, newRows - 1);
++
++        TrimScrollback();
++        _scrollbackOffset = 0;
++        if (!_alternateActive) _screen = _primary;
++    }
++
+     public void ScrollViewport(int rows)
+     {
+         if (rows == 0) return;
+@@ -205,7 +346,7 @@ public sealed class TerminalEngine
+                 {
+                     int source = start + destination;
+                     lines[destination] = source < _scrollback.Count
+-                        ? (TerminalCell[])_scrollback[source].Clone()
++                        ? (TerminalCell[])_scrollback[source].Cells.Clone()
+                         : source < total
+                             ? (TerminalCell[])_screen.Lines[source - _scrollback.Count].Clone()
+                             : BlankLine(columns);
+@@ -566,6 +707,7 @@ public sealed class TerminalEngine
+         {
+             _screen.CursorColumn = columns - 1;
+             _screen.WrapPending = _autoWrap;
++            _screen.WrappedRows[row] = _autoWrap;
+         }
+         else _screen.CursorColumn = next;
+     }
+@@ -663,10 +805,15 @@ public sealed class TerminalEngine
+         for (int iteration = 0; iteration < count; iteration++)
+         {
+             if (!_alternateActive && ReferenceEquals(_screen, _primary) && top == 0 && bottom == Rows - 1)
+-                PushScrollback(_screen.Lines[top]);
++                PushScrollback(_screen.Lines[top], _screen.WrappedRows[top]);
+             TerminalCell[] removed = _screen.Lines[top];
+-            for (int row = top; row < bottom; row++) _screen.Lines[row] = _screen.Lines[row + 1];
++            for (int row = top; row < bottom; row++)
++            {
++                _screen.Lines[row] = _screen.Lines[row + 1];
++                _screen.WrappedRows[row] = _screen.WrappedRows[row + 1];
++            }
+             _screen.Lines[bottom] = ClearLine(removed);
++            _screen.WrappedRows[bottom] = false;
+         }
+         MarkDirtyRange(top, bottom);
+         _revision++;
+@@ -678,17 +825,22 @@ public sealed class TerminalEngine
+         for (int iteration = 0; iteration < count; iteration++)
+         {
+             TerminalCell[] removed = _screen.Lines[bottom];
+-            for (int row = bottom; row > top; row--) _screen.Lines[row] = _screen.Lines[row - 1];
++            for (int row = bottom; row > top; row--)
++            {
++                _screen.Lines[row] = _screen.Lines[row - 1];
++                _screen.WrappedRows[row] = _screen.WrappedRows[row - 1];
++            }
+             _screen.Lines[top] = ClearLine(removed);
++            _screen.WrappedRows[top] = false;
+         }
+         MarkDirtyRange(top, bottom);
+         _revision++;
+     }
+ 
+-    private void PushScrollback(TerminalCell[] line)
++    private void PushScrollback(TerminalCell[] line, bool wrapped)
+     {
+         if (_maxScrollback == 0) return;
+-        _scrollback.Add((TerminalCell[])line.Clone());
++        _scrollback.Add(new ScrollbackLine((TerminalCell[])line.Clone(), wrapped));
+         if (_scrollbackOffset > 0) _scrollbackOffset++;
+         TrimScrollback();
+     }
+@@ -738,6 +890,7 @@ public sealed class TerminalEngine
+         start = Math.Clamp(start, 0, Columns - 1);
+         end = Math.Clamp(end, 0, Columns - 1);
+         for (int column = start; column <= end; column++) _screen.Lines[row][column] = BlankCell();
++        if (end == Columns - 1) _screen.WrappedRows[row] = false;
+         MarkDirty(row);
+         _revision++;
+     }
+@@ -912,13 +1065,6 @@ public sealed class TerminalEngine
+         return line;
+     }
+ 
+-    private static TerminalCell[] ResizeLine(TerminalCell[] line, int columns)
+-    {
+-        TerminalCell[] resized = BlankLine(columns);
+-        Array.Copy(line, resized, Math.Min(line.Length, columns));
+-        return resized;
+-    }
+-
+     private static TerminalCell[][] CloneLines(TerminalCell[][] lines)
+     {
+         var clone = new TerminalCell[lines.Length][];
