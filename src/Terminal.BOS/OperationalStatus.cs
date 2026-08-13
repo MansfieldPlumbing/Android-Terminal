@@ -1,4 +1,4 @@
-namespace Terminal.Bos;
+namespace Terminal.BOS;
 
 public enum OperationalState
 {
@@ -19,7 +19,7 @@ public enum ConsoleBackend
     Pty,
 }
 
-public sealed record BosStatus(OperationalState State, string Version, string? Detail = null);
+public sealed record BOSStatus(OperationalState State, string Version, string? Detail = null);
 
 public sealed record WorkerSupervisorStatus(
     OperationalState State,
@@ -48,7 +48,7 @@ public sealed record ConsoleRouterStatus(
 
 public sealed record TerminalOperationalStatus(
     DateTimeOffset ObservedAt,
-    BosStatus Bos,
+    BOSStatus BOS,
     WorkerSupervisorStatus Remedy,
     ConsoleRouterStatus Router);
 
@@ -61,7 +61,7 @@ public sealed class TerminalStatusCatalog
     {
         _current = new TerminalOperationalStatus(
             DateTimeOffset.UtcNow,
-            new BosStatus(OperationalState.Starting, bosVersion),
+            new BOSStatus(OperationalState.Starting, bosVersion),
             new WorkerSupervisorStatus(OperationalState.Absent, Detail: "No subordinate worker generation has been admitted."),
             new ConsoleRouterStatus(OperationalState.Absent, ConsoleBackend.None, null, [],
                 "No console router worker is active."));
@@ -72,10 +72,10 @@ public sealed class TerminalStatusCatalog
         lock (_gate) return _current with { ObservedAt = DateTimeOffset.UtcNow };
     }
 
-    public void PublishBos(BosStatus status)
+    public void PublishBOS(BOSStatus status)
     {
         ArgumentNullException.ThrowIfNull(status);
-        lock (_gate) _current = _current with { ObservedAt = DateTimeOffset.UtcNow, Bos = status };
+        lock (_gate) _current = _current with { ObservedAt = DateTimeOffset.UtcNow, BOS = status };
     }
 
     public void PublishWorkerSupervisor(WorkerSupervisorStatus status)

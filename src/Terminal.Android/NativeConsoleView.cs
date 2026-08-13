@@ -2,7 +2,7 @@ using Android.Content;
 using Android.Graphics;
 using Android.OS;
 using Android.Views;
-using Terminal.Engine;
+using Terminal.VT;
 
 namespace NativePwshConsole;
 
@@ -10,7 +10,7 @@ internal sealed class NativeConsoleView : View
 {
     private const int KeyboardCursorVisibleMs = 600;
     private const int KeyboardCursorHiddenMs = 500;
-    private readonly TerminalEngine _engine;
+    private readonly TerminalVT _engine;
     private readonly Paint _paint = new(PaintFlags.AntiAlias);
     private readonly Paint _surfacePaint = new();
     private readonly Paint _selectionPaint = new();
@@ -44,7 +44,7 @@ internal sealed class NativeConsoleView : View
     public event Action<int, int>? ViewportChanged;
     public event Action? InputRequested;
 
-    public NativeConsoleView(Context context, TerminalEngine engine, ConsoleSettings settings) : base(context)
+    public NativeConsoleView(Context context, TerminalVT engine, ConsoleSettings settings) : base(context)
     {
         _engine = engine;
         _scaledDensity = context.Resources?.DisplayMetrics?.ScaledDensity ?? 1f;

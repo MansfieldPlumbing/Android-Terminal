@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Terminal.Engine;
+namespace Terminal.VT;
 
 internal static class UnicodeWidth
 {

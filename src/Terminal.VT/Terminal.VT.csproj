@@ -3,6 +3,6 @@
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Terminal.Engine</RootNamespace>
+    <RootNamespace>Terminal.VT</RootNamespace>
   </PropertyGroup>
 </Project>

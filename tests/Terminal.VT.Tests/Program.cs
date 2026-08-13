@@ -1,4 +1,4 @@
-using Terminal.Engine;
+using Terminal.VT;
 
 var tests = new (string Name, Action Body)[]
 {
@@ -31,12 +31,12 @@ foreach ((string name, Action body) in tests)
     }
 }
 
-Console.WriteLine($"Terminal.Engine contract: {tests.Length - failures}/{tests.Length} passed");
+Console.WriteLine($"Terminal.VT contract: {tests.Length - failures}/{tests.Length} passed");
 return failures == 0 ? 0 : 1;
 
 static void C0AndCursorAddressing()
 {
-    var engine = new TerminalEngine(8, 3);
+    var engine = new TerminalVT(8, 3);
     engine.Feed("abc\rZ\x1b[2;3HX");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
     Equal("Zbc", Text(snapshot, 0, 3));
@@ -51,7 +51,7 @@ static void C0AndCursorAddressing()
 
 static void EraseSemantics()
 {
-    var engine = new TerminalEngine(6, 2);
+    var engine = new TerminalVT(6, 2);
     engine.Feed("abcdef\x1b[1;3H\x1b[K");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
     Equal("ab    ", Text(snapshot, 0, 6));
@@ -64,7 +64,7 @@ static void EraseSemantics()
 
 static void SgrAttributesAndColors()
 {
-    var engine = new TerminalEngine(8, 2);
+    var engine = new TerminalVT(8, 2);
     engine.Feed("\x1b[1;3;4;9;38;2;12;34;56;48;5;196mX");
     TerminalCell cell = engine.CaptureSnapshot().Lines[0][0];
     True(cell.Attributes.HasFlag(TerminalAttributes.Bold));
@@ -81,7 +81,7 @@ static void SgrAttributesAndColors()
 
 static void ScrollRegions()
 {
-    var engine = new TerminalEngine(4, 4);
+    var engine = new TerminalVT(4, 4);
     engine.Feed("A\r\nB\r\nC\r\nD");
     engine.Feed("\x1b[2;3r\x1b[3;1H\n");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
@@ -93,7 +93,7 @@ static void ScrollRegions()
 
 static void AlternateScreenRestoration()
 {
-    var engine = new TerminalEngine(8, 2);
+    var engine = new TerminalVT(8, 2);
     engine.Feed("primary");
     engine.Feed("\x1b[?1049hALT");
     TerminalSnapshot alternate = engine.CaptureSnapshot();
@@ -108,7 +108,7 @@ static void AlternateScreenRestoration()
 
 static void WideAndCombiningGlyphs()
 {
-    var engine = new TerminalEngine(4, 2);
+    var engine = new TerminalVT(4, 2);
     engine.Feed("abc界");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
     Equal("abc", Text(snapshot, 0, 3));
@@ -116,14 +116,14 @@ static void WideAndCombiningGlyphs()
     Equal((byte)2, snapshot.Lines[1][0].DisplayWidth);
     Equal((byte)0, snapshot.Lines[1][1].DisplayWidth);
 
-    engine = new TerminalEngine(4, 1);
+    engine = new TerminalVT(4, 1);
     engine.Feed("e\u0301");
     Equal("e\u0301", engine.CaptureSnapshot().Lines[0][0].Grapheme);
 }
 
 static void StableScrollbackViewport()
 {
-    var engine = new TerminalEngine(4, 2, 10);
+    var engine = new TerminalVT(4, 2, 10);
     engine.Feed("A\r\nB\r\nC");
     engine.ScrollViewport(1);
     TerminalSnapshot before = engine.CaptureSnapshot();
@@ -140,7 +140,7 @@ static void StableScrollbackViewport()
 static void OscTitleAndHyperlinks()
 {
     var events = new List<TerminalEvent>();
-    var engine = new TerminalEngine(12, 2);
+    var engine = new TerminalVT(12, 2);
     engine.SemanticEvent += events.Add;
     engine.Feed("\x1b]2;Build console\a");
     engine.Feed("\x1b]8;;https://example.test\x1b\\link\x1b]8;;\x1b\\");
@@ -155,7 +155,7 @@ static void OscTitleAndHyperlinks()
 static void ModesAndTerminalReplies()
 {
     string? reply = null;
-    var engine = new TerminalEngine(8, 2);
+    var engine = new TerminalVT(8, 2);
     engine.SemanticEvent += e => reply = (e as TerminalReplyRequestedEvent)?.Reply ?? reply;
     engine.Feed("\x1b[?25l\x1b[2;4H\x1b[6n");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
@@ -165,7 +165,7 @@ static void ModesAndTerminalReplies()
 
 static void DirtyRowsAndSelection()
 {
-    var engine = new TerminalEngine(8, 3);
+    var engine = new TerminalVT(8, 3);
     _ = engine.CaptureSnapshot();
     engine.Feed("\x1b[2;1HX");
     TerminalSnapshot snapshot = engine.CaptureSnapshot();
@@ -179,7 +179,7 @@ static void DirtyRowsAndSelection()
 
 static void InputCompositionProjection()
 {
-    var engine = new TerminalEngine(12, 2);
+    var engine = new TerminalVT(12, 2);
     engine.Feed("PS> ");
     engine.SetComposition("Get-Item", 3);
     TerminalSnapshot composed = engine.CaptureSnapshot();
@@ -194,7 +194,7 @@ static void InputCompositionProjection()
 
 static void IncrementalParserBoundaries()
 {
-    var engine = new TerminalEngine(12, 2);
+    var engine = new TerminalVT(12, 2);
     engine.Feed("\x1b[3");
     engine.Feed("1mR");
     engine.Feed("\ud83d");

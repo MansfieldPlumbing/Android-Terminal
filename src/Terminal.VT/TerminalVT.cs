@@ -1,9 +1,9 @@
 using System.Text;
 using System.Globalization;
 
-namespace Terminal.Engine;
+namespace Terminal.VT;
 
-public sealed class TerminalEngine
+public sealed class TerminalVT
 {
     private enum ParserState { Ground, Escape, Csi, Osc, OscEscape }
 
@@ -67,7 +67,7 @@ public sealed class TerminalEngine
     private string _composition = string.Empty;
     private int _compositionCaret;
 
-    public TerminalEngine(int columns = 80, int rows = 24, int maxScrollback = 2000)
+    public TerminalVT(int columns = 80, int rows = 24, int maxScrollback = 2000)
     {
         if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
         if (rows <= 0) throw new ArgumentOutOfRangeException(nameof(rows));

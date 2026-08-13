@@ -6,7 +6,7 @@ using Android.OS;
 using Android.Views;
 using Android.Views.InputMethods;
 using Android.Widget;
-using Terminal.Engine;
+using Terminal.VT;
 
 namespace NativePwshConsole;
 
@@ -19,7 +19,7 @@ namespace NativePwshConsole;
 public sealed class MainActivity : Activity
 {
     private PowerShellSession? _session;
-    private TerminalEngine? _terminal;
+    private TerminalVT? _terminal;
     private NativeConsoleView? _console;
     private EditText? _input;
     private Dialog? _settingsDialog;
@@ -46,16 +46,15 @@ public sealed class MainActivity : Activity
         try
         {
             _session = TerminalRuntime.GetOrCreate(this);
-            _terminal = TerminalRuntime.GetTerminalEngine(this);
+            _terminal = TerminalRuntime.GetTerminalVT(this);
             _settings = _session.LoadSettings(settingsPath);
             _terminal.MaxScrollback = _settings.Scrollback;
-            TerminalSourcePolicy.DragonsEnabled = _settings.AllowDragons;
         }
         catch { _settings = new ConsoleSettings(); }
 
         var root = new FrameLayout(this);
         root.SetFitsSystemWindows(true);
-        _terminal ??= TerminalRuntime.GetTerminalEngine(this);
+        _terminal ??= TerminalRuntime.GetTerminalVT(this);
         _console = new NativeConsoleView(this, _terminal, _settings);
         _console.SetHardwareKeyboard(Resources?.Configuration != null && (int)Resources.Configuration.Keyboard > 1);
         _console.ViewportChanged += (columns, rows) => _session?.SetWindowSize(columns, rows);
@@ -547,7 +546,6 @@ public sealed class MainActivity : Activity
             RunOnUiThread(() =>
             {
                 _settings = _session?.LoadSettings(_settingsPath) ?? _settings;
-                TerminalSourcePolicy.DragonsEnabled = _settings.AllowDragons;
                 ApplySettings();
             });
         })));
@@ -562,7 +560,6 @@ public sealed class MainActivity : Activity
         if (enabled)
         {
             _settings.AllowDragons = false;
-            TerminalSourcePolicy.DragonsEnabled = false;
             SaveSettings();
             return;
         }
@@ -575,7 +572,6 @@ public sealed class MainActivity : Activity
             .SetPositiveButton("Disable", (_, _) =>
             {
                 _settings.AllowDragons = true;
-                TerminalSourcePolicy.DragonsEnabled = true;
                 SaveSettings();
             }).Show();
     }
@@ -598,7 +594,6 @@ public sealed class MainActivity : Activity
             using var source = Assets!.Open("settings.ps1");
             using var target = System.IO.File.Create(_settingsPath); source.CopyTo(target);
             _settings = _session?.LoadSettings(_settingsPath) ?? new ConsoleSettings();
-            TerminalSourcePolicy.DragonsEnabled = _settings.AllowDragons;
             ApplySettings();
         }).Show();
 
